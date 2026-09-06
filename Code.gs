@@ -15,6 +15,9 @@
 
 // ملف بيانات الأصناف المُصدَّر من قاعدة بيانات الخوارزمي (CSV داخل مجلد «سكاي سوفت» في درايف)
 // يُحدَّث تلقائياً كل يوم بواسطة catalog_build.py
+// معرف ملف جوجل شيت (يجعل السكربت يعمل مستقلاً أو مربوطاً بالملف)
+var SHEET_ID = '14uP8Lv69Gw6r8qg5CwH1Jimox-U21XuHdJ6AMwRq4to';
+
 var CATALOG_CSV_NAME = 'catalog_items.csv';
 var CATALOG_CSV_ID   = '1smkD6iZeMEVN5ZNo0JVkB02oo2wIUXIb';  // فارغ = ابحث بالاسم
 
@@ -73,10 +76,31 @@ function onOpen() {
 
 function runAll() { importItems(); syncImages(); }
 
+/** تشغيل الكل من محرر Apps Script مباشرة (بدون منيو) */
+function setupAndRunAll() {
+  setupSheets();
+  importItems();
+  syncImages();
+  makeImagesPublic();
+  Logger.log('تم كل شيء ✅');
+}
+
+/** ملف الشيت — يعمل سواء شُغّل السكربت من داخل الملف أو مستقلاً */
+function ss_() {
+  var a = null;
+  try { a = SpreadsheetApp.getActiveSpreadsheet(); } catch (e) {}
+  return a || SpreadsheetApp.openById(SHEET_ID);
+}
+
+/** رسالة تظهر في المنيو، وتُسجَّل فقط إن شُغّلت من المحرر */
+function say_(msg) {
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); }
+}
+
 /* ================== 1) إعداد الصفحات ================== */
 
 function setupSheets() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ss_();
 
   // --- الاصناف ---
   var it = ss.getSheetByName(SH_ITEMS) || ss.insertSheet(SH_ITEMS);
@@ -167,13 +191,13 @@ function setupSheets() {
   ]);
   hp.setColumnWidth(1, 700);
 
-  SpreadsheetApp.getUi().alert('تم إعداد الصفحات ✅');
+  say_('تم إعداد الصفحات ✅');
 }
 
 /* ================== 2) استيراد الأصناف ================== */
 
 function importItems() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ss_();
   var sh = ss.getSheetByName(SH_ITEMS);
   if (!sh) { setupSheets(); sh = ss.getSheetByName(SH_ITEMS); }
 
@@ -209,7 +233,7 @@ function importItems() {
   }
 
   if (existing.length) sh.getRange(2, 1, existing.length, ITEM_HEADERS.length).setValues(existing);
-  SpreadsheetApp.getUi().alert('تم الاستيراد ✅\nجديد: ' + added + '   محدَّث: ' + updated);
+  say_('تم الاستيراد ✅\nجديد: ' + added + '   محدَّث: ' + updated);
 }
 
 /** يقرأ catalog_items.csv من درايف ويعيد صفوفاً مرتبة حسب ITEM_HEADERS */
@@ -260,7 +284,7 @@ function readCatalogCsv_() {
 /* ================== 3) مزامنة الصور والأقسام ================== */
 
 function syncImages() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var ss = ss_();
   var sh = ss.getSheetByName(SH_ITEMS);
   if (!sh || sh.getLastRow() < 2) throw new Error('لا توجد أصناف — شغّل الاستيراد أولاً');
 
@@ -328,9 +352,7 @@ function syncImages() {
   });
   if (toAdd.length) ct.getRange(ct.getLastRow()+1,1,toAdd.length,4).setValues(toAdd);
 
-  SpreadsheetApp.getUi().alert(
-    'تمت المزامنة ✅\nصور مرتبطة: ' + hitImg + '\nأقسام محددة: ' + hitCat + '\nأقسام جديدة: ' + toAdd.length
-  );
+  say_('تمت المزامنة ✅\nصور مرتبطة: ' + hitImg + '\nأقسام محددة: ' + hitCat + '\nأقسام جديدة: ' + toAdd.length);
 }
 
 function scanFolder_(id, cb) { scanFolderObj_(DriveApp.getFolderById(id), cb); }
@@ -364,8 +386,8 @@ function makeImagesPublic() {
     } catch (e) {}
   });
   try {
-    DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId())
+    DriveApp.getFileById(ss_().getId())
       .setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   } catch (e) {}
-  SpreadsheetApp.getUi().alert('تم فتح صلاحية العرض للصور وملف البيانات ✅');
+  say_('تم فتح صلاحية العرض للصور وملف البيانات ✅');
 }
