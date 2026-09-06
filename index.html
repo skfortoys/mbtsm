@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>الطفل المبتسم — كتالوج الجملة</title>
+<meta name="theme-color" content="#12203f">
+<meta name="description" content="كتالوج ألعاب الأطفال بالجملة — تصفح الأصناف وأرسل طلبك على واتساب">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+/* ============ الإعدادات المرئية ============ */
+:root{
+  --bg:#f5f6fa; --surface:#ffffff; --ink:#14182b; --muted:#6b7189;
+  --line:#e5e8f0; --brand:#12203f; --brand-2:#28407a; --accent:#ff8a1f;
+  --accent-soft:#fff3e5; --ok:#0f9d6a; --ok-soft:#e6f7f0; --danger:#e03b3b;
+  --shadow:0 1px 2px rgba(16,24,40,.05), 0 8px 24px -12px rgba(16,24,40,.18);
+  --radius:16px; --maxw:1320px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Tajawal',system-ui,-apple-system,'Segoe UI',sans-serif;
+  background:var(--bg); color:var(--ink); font-size:15px; line-height:1.6;
+  -webkit-text-size-adjust:100%;
+}
+img{max-width:100%; display:block}
+button,input,select,textarea{font-family:inherit; font-size:inherit}
+button{cursor:pointer; border:0; background:none; color:inherit}
+a{color:inherit}
+.wrap{max-width:var(--maxw); margin:0 auto; padding:0 16px}
+.hidden{display:none !important}
+
+/* ============ الهيدر ============ */
+header{
+  position:sticky; top:0; z-index:60; background:var(--brand); color:#fff;
+  box-shadow:0 2px 16px rgba(0,0,0,.18);
+}
+.hdr{display:flex; align-items:center; gap:12px; padding:11px 0}
+.brand{display:flex; align-items:center; gap:10px; min-width:0; flex-shrink:0}
+.logo{
+  width:42px;height:42px;border-radius:13px;flex-shrink:0;
+  background:linear-gradient(140deg,var(--accent),#ffb15c);
+  display:grid;place-items:center;font-size:22px;
+}
+.brand h1{font-size:16.5px; margin:0; font-weight:800; white-space:nowrap}
+.brand small{display:block; font-size:11.5px; opacity:.72; font-weight:400; margin-top:-3px}
+.search{flex:1; position:relative; min-width:0}
+.search input{
+  width:100%; padding:11px 42px 11px 14px; border-radius:12px; border:0;
+  background:rgba(255,255,255,.14); color:#fff; outline:none;
+}
+.search input::placeholder{color:rgba(255,255,255,.65)}
+.search input:focus{background:rgba(255,255,255,.22)}
+.search .ico{position:absolute; inset-inline-start:13px; top:50%; transform:translateY(-50%); opacity:.7}
+.hdr-btn{
+  position:relative; width:44px; height:44px; border-radius:12px;
+  background:rgba(255,255,255,.13); display:grid; place-items:center; font-size:19px; flex-shrink:0;
+}
+.hdr-btn:hover{background:rgba(255,255,255,.24)}
+.badge{
+  position:absolute; top:-5px; inset-inline-start:-5px; min-width:20px; height:20px;
+  border-radius:10px; background:var(--accent); color:#12203f; font-size:11.5px; font-weight:800;
+  display:grid; place-items:center; padding:0 5px; border:2px solid var(--brand);
+}
+
+/* ============ شريط الأقسام ============ */
+.catbar{background:var(--brand-2); color:#fff; overflow:hidden}
+.catbar .row{display:flex; gap:8px; overflow-x:auto; padding:10px 16px; scrollbar-width:none}
+.catbar .row::-webkit-scrollbar{display:none}
+.chip{
+  white-space:nowrap; padding:7px 14px; border-radius:999px; font-size:13.5px; font-weight:500;
+  background:rgba(255,255,255,.12); transition:.15s;
+}
+.chip:hover{background:rgba(255,255,255,.24)}
+.chip.on{background:#fff; color:var(--brand); font-weight:700}
+.chip.hot{background:var(--accent); color:#12203f; font-weight:700}
+.chip.hot.on{background:#fff; color:var(--accent)}
+
+/* ============ البانر ============ */
+.banner{
+  margin:16px 0 4px; padding:16px 20px; border-radius:var(--radius);
+  background:linear-gradient(115deg,var(--brand),var(--brand-2) 65%,#3c5aa8);
+  color:#fff; display:flex; align-items:center; gap:14px; box-shadow:var(--shadow);
+}
+.banner .big{font-size:26px}
+.banner b{display:block; font-size:16px}
+.banner span{font-size:13px; opacity:.82}
+
+/* ============ شريط الفلاتر ============ */
+.toolbar{
+  display:flex; align-items:center; gap:9px; flex-wrap:wrap;
+  padding:14px 0 10px; position:sticky; top:66px; z-index:40;
+  background:linear-gradient(var(--bg) 78%, transparent);
+}
+.sel{
+  padding:8px 12px; border-radius:11px; border:1px solid var(--line);
+  background:var(--surface); font-size:13.5px; color:var(--ink); outline:none;
+}
+.pill{
+  padding:8px 13px; border-radius:11px; border:1px solid var(--line);
+  background:var(--surface); font-size:13.5px; font-weight:500;
+}
+.pill.on{background:var(--brand); color:#fff; border-color:var(--brand)}
+.count{margin-inline-start:auto; color:var(--muted); font-size:13px}
+
+/* ============ الشبكة ============ */
+.grid{
+  display:grid; gap:14px; padding-bottom:40px;
+  grid-template-columns:repeat(auto-fill,minmax(190px,1fr));
+}
+.grid.list{grid-template-columns:1fr}
+.card{
+  background:var(--surface); border-radius:var(--radius); overflow:hidden;
+  box-shadow:var(--shadow); display:flex; flex-direction:column;
+  border:1px solid transparent; transition:.16s;
+}
+.card:hover{transform:translateY(-2px); border-color:#d7ddec}
+.thumb{position:relative; aspect-ratio:1/1; background:#eef1f7; cursor:pointer; overflow:hidden}
+.thumb img{width:100%; height:100%; object-fit:cover; transition:.3s}
+.card:hover .thumb img{transform:scale(1.05)}
+.tags{position:absolute; top:8px; inset-inline-start:8px; display:flex; flex-direction:column; gap:5px}
+.tag{
+  font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px;
+  background:var(--accent); color:#12203f;
+}
+.tag.new{background:var(--ok); color:#fff}
+.tag.out{background:#4b5163; color:#fff}
+.fav{
+  position:absolute; top:8px; inset-inline-end:8px; width:32px; height:32px; border-radius:50%;
+  background:rgba(255,255,255,.92); display:grid; place-items:center; font-size:15px; color:#c2c7d4;
+}
+.fav.on{color:var(--danger)}
+.body{padding:11px 12px 12px; display:flex; flex-direction:column; gap:7px; flex:1}
+.code{font-size:11.5px; color:var(--muted); font-family:ui-monospace,monospace; letter-spacing:.3px}
+.name{
+  font-size:14px; font-weight:500; line-height:1.45; min-height:40px;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+}
+.prices{display:flex; align-items:baseline; gap:7px; flex-wrap:wrap}
+.p-main{font-size:18px; font-weight:800; color:var(--brand)}
+.p-cur{font-size:12px; font-weight:500; color:var(--muted)}
+.p-sub{font-size:11.5px; color:var(--ok); background:var(--ok-soft); padding:2px 7px; border-radius:6px; font-weight:500}
+.carton{font-size:12px; color:var(--muted)}
+.carton b{color:var(--ink); font-weight:700}
+.qbtns{display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-top:auto}
+.qb{
+  padding:6px 2px; border-radius:9px; background:#f0f2f8; font-size:12px; font-weight:700;
+  color:var(--brand-2); transition:.12s;
+}
+.qb:hover{background:var(--brand); color:#fff}
+.qb.ctn{background:var(--accent-soft); color:#b45f00}
+.qb.ctn:hover{background:var(--accent); color:#12203f}
+.qb.off{opacity:.42}
+.qb.off:hover{background:#f0f2f8; color:var(--brand-2)}
+.addrow{display:flex; gap:6px}
+.add{
+  flex:1; padding:9px; border-radius:11px; background:var(--brand); color:#fff;
+  font-weight:700; font-size:13.5px;
+}
+.add:hover{background:var(--brand-2)}
+.add.in{background:var(--ok)}
+.qty-in{width:62px; padding:9px 6px; border-radius:11px; border:1px solid var(--line); text-align:center; font-weight:700}
+
+/* عرض القائمة */
+.grid.list .card{flex-direction:row}
+.grid.list .thumb{width:150px; aspect-ratio:1/1; flex-shrink:0}
+.grid.list .body{flex-direction:row; flex-wrap:wrap; align-items:center; gap:14px}
+.grid.list .name{min-height:0; flex:1; -webkit-line-clamp:1}
+.grid.list .qbtns{grid-template-columns:repeat(4,54px); margin:0}
+.grid.list .addrow{width:auto}
+.grid.list .add{padding:9px 18px}
+
+/* ============ الحالات ============ */
+.state{padding:70px 20px; text-align:center; color:var(--muted)}
+.state .em{font-size:46px; margin-bottom:10px}
+.state b{display:block; color:var(--ink); font-size:17px; margin-bottom:6px}
+.skel{background:var(--surface); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow)}
+.skel .a{aspect-ratio:1/1; background:linear-gradient(90deg,#eef1f7,#e3e8f2,#eef1f7); background-size:200% 100%; animation:sh 1.3s infinite}
+.skel .b{height:13px; margin:12px; border-radius:6px; background:#eef1f7}
+@keyframes sh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* ============ الأدراج ============ */
+.scrim{position:fixed; inset:0; background:rgba(12,16,32,.55); z-index:80; opacity:0; pointer-events:none; transition:.2s}
+.scrim.on{opacity:1; pointer-events:auto}
+.drawer{
+  position:fixed; top:0; inset-inline-start:0; height:100dvh; width:min(430px,100%);
+  background:var(--bg); z-index:90; display:flex; flex-direction:column;
+  transform:translateX(105%); transition:transform .25s cubic-bezier(.4,0,.2,1);
+  visibility:hidden;
+}
+.drawer.on{transform:none; visibility:visible}
+.dhead{
+  padding:15px 16px; background:var(--brand); color:#fff; display:flex;
+  align-items:center; justify-content:space-between; gap:10px;
+}
+.dhead b{font-size:16.5px}
+.dbody{flex:1; overflow:auto; padding:14px 16px 16px}
+.dfoot{padding:14px 16px; background:var(--surface); border-top:1px solid var(--line)}
+
+.ci{display:flex; gap:11px; background:var(--surface); border-radius:13px; padding:10px; margin-bottom:10px; box-shadow:var(--shadow)}
+.ci img{width:62px; height:62px; border-radius:10px; object-fit:cover; background:#eef1f7; flex-shrink:0}
+.ci .m{flex:1; min-width:0}
+.ci .n{font-size:13.5px; font-weight:500; line-height:1.35}
+.ci .c{font-size:11px; color:var(--muted); font-family:ui-monospace,monospace}
+.stepper{display:flex; align-items:center; gap:0; margin-top:6px; border:1px solid var(--line); border-radius:9px; width:fit-content; overflow:hidden}
+.stepper button{width:28px; height:28px; background:#f3f5fa; font-weight:800; color:var(--brand)}
+.stepper input{width:52px; height:28px; border:0; text-align:center; font-weight:700; outline:none}
+.ci .t{text-align:end; display:flex; flex-direction:column; justify-content:space-between}
+.ci .t b{font-size:14.5px; color:var(--brand); white-space:nowrap}
+.ci .rm{color:var(--muted); font-size:16px}
+.ci .rm:hover{color:var(--danger)}
+
+.field{margin-bottom:11px}
+.field label{display:block; font-size:12.5px; font-weight:500; color:var(--muted); margin-bottom:4px}
+.field input,.field select,.field textarea{
+  width:100%; padding:10px 12px; border-radius:11px; border:1px solid var(--line);
+  background:var(--surface); outline:none;
+}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand-2)}
+.sumrow{display:flex; justify-content:space-between; font-size:13.5px; color:var(--muted); margin-bottom:5px}
+.sumrow.tot{font-size:18px; font-weight:800; color:var(--ink); margin:8px 0 12px}
+.wa{
+  width:100%; padding:13px; border-radius:13px; background:#25d366; color:#0a2e18;
+  font-weight:800; font-size:15.5px; display:flex; align-items:center; justify-content:center; gap:8px;
+}
+.wa:hover{filter:brightness(.95)}
+.ghost{
+  width:100%; padding:10px; border-radius:12px; border:1px solid var(--line);
+  background:var(--surface); font-weight:500; font-size:13.5px; margin-top:8px; color:var(--muted);
+}
+.note{font-size:11.5px; color:var(--muted); text-align:center; margin-top:9px; line-height:1.5}
+
+/* ============ نافذة الصنف ============ */
+.modal{
+  position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:16px;
+}
+.modal.on{display:flex}
+.mbox{
+  background:var(--bg); border-radius:20px; width:min(860px,100%); max-height:92dvh;
+  overflow:auto; box-shadow:0 24px 70px rgba(0,0,0,.35); position:relative;
+}
+.mclose{position:absolute; top:12px; inset-inline-start:12px; width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,.94); font-size:18px; z-index:2; box-shadow:var(--shadow)}
+.mgrid{display:grid; grid-template-columns:1fr 1fr; min-width:0}
+.mimg{background:#fff; aspect-ratio:1/1}
+.mimg img{width:100%; height:100%; object-fit:contain}
+.minfo{padding:22px; display:flex; flex-direction:column; gap:12px; min-width:0}
+.minfo h2{margin:0; font-size:21px; line-height:1.4; overflow-wrap:anywhere}
+.spec{display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+  padding:8px 0; border-bottom:1px dashed var(--line); font-size:13.5px}
+.spec span{color:var(--muted); flex:0 0 auto}
+.spec b{font-weight:700; text-align:end; min-width:0; overflow-wrap:anywhere}
+@media(max-width:700px){ .mgrid{grid-template-columns:1fr} }
+
+/* ============ الفوتر ============ */
+footer{background:var(--brand); color:rgba(255,255,255,.72); padding:28px 0 34px; margin-top:20px; font-size:13px}
+footer .cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:22px}
+footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
+
+@media(max-width:640px){
+  .brand h1{font-size:15px} .brand small{display:none}
+  .hdr{flex-wrap:wrap; padding:9px 0 10px}
+  .brand{flex:1}
+  .search{order:3; flex-basis:100%; margin-top:8px}
+  .logo{width:36px;height:36px;border-radius:11px;font-size:19px}
+  .hdr-btn{width:40px;height:40px}
+  .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
+  .toolbar{top:62px}
+  .grid.list .thumb{width:110px}
+  .grid.list .body{flex-direction:column; align-items:stretch; gap:7px}
+  .grid.list .qbtns{grid-template-columns:repeat(4,1fr)}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hdr">
+    <div class="brand">
+      <div class="logo">🧸</div>
+      <div>
+        <h1 id="storeName">الطفل المبتسم</h1>
+        <small id="storeDesc">كتالوج الجملة</small>
+      </div>
+    </div>
+    <div class="search">
+      <span class="ico">🔍</span>
+      <input id="q" type="search" placeholder="ابحث بالاسم أو كود الصنف…" autocomplete="off">
+    </div>
+    <button class="hdr-btn" id="btnFav" title="المفضلة">♡<span class="badge hidden" id="favBadge">0</span></button>
+    <button class="hdr-btn" id="btnCart" title="سلة الطلب">🛒<span class="badge hidden" id="cartBadge">0</span></button>
+  </div>
+  <div class="catbar"><div class="row" id="cats"></div></div>
+</header>
+
+<main class="wrap">
+  <div class="banner" id="banner">
+    <div class="big">🎉</div>
+    <div><b id="bannerTitle">تصفح أصنافنا</b><span id="bannerSub">أضف الأصناف للسلة ثم أرسل طلبك على واتساب مباشرة</span></div>
+  </div>
+
+  <div class="toolbar">
+    <select class="sel" id="fPrice">
+      <option value="">كل الأسعار</option>
+      <option value="0-5">أقل من 5</option>
+      <option value="5-10">5 — 10</option>
+      <option value="10-20">10 — 20</option>
+      <option value="20-50">20 — 50</option>
+      <option value="50-100">50 — 100</option>
+      <option value="100-999999">أكثر من 100</option>
+    </select>
+    <select class="sel" id="fSort">
+      <option value="def">الترتيب الافتراضي</option>
+      <option value="p-asc">السعر: من الأقل</option>
+      <option value="p-desc">السعر: من الأعلى</option>
+      <option value="name">الاسم أبجدياً</option>
+      <option value="code">كود الصنف</option>
+    </select>
+    <button class="pill" id="fView">☰ قائمة</button>
+    <button class="pill" id="btnQuick">⚡ طلب سريع بالأكواد</button>
+    <div class="count" id="count"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div id="state"></div>
+</main>
+
+<footer>
+  <div class="wrap cols">
+    <div><b>الشحن</b><span id="fShip">—</span></div>
+    <div><b>طرق الدفع</b><span id="fPay">—</span></div>
+    <div><b>تنويه</b><span id="fNote">—</span></div>
+    <div><b>تواصل</b><span id="fContact">—</span></div>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- سلة الطلب -->
+<aside class="drawer" id="cart">
+  <div class="dhead"><b>🛒 سلة الطلب</b><button id="cartClose" style="font-size:22px">✕</button></div>
+  <div class="dbody" id="cartBody"></div>
+  <div class="dfoot" id="cartFoot"></div>
+</aside>
+
+<!-- المفضلة -->
+<aside class="drawer" id="fav">
+  <div class="dhead"><b>♡ المفضلة</b><button id="favClose" style="font-size:22px">✕</button></div>
+  <div class="dbody" id="favBody"></div>
+</aside>
+
+<!-- نافذة الصنف -->
+<div class="modal" id="modal"><div class="mbox" id="mbox"></div></div>
+
+<script>
+/* ==================================================================
+   ①  الإعدادات — عدّل هنا فقط
+   ================================================================== */
+const SHEET_ID = '14uP8Lv69Gw6r8qg5CwH1Jimox-U21XuHdJ6AMwRq4to';
+const WHATSAPP_FALLBACK = '';   // يُقرأ من صفحة الاعدادات، وهذا احتياطي
+/* ================================================================== */
+
+const CSV = (name) =>
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}&_=${Date.now()}`;
+
+const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#eef1f7"/><text x="150" y="160" font-size="64" text-anchor="middle" fill="#c3c9d8">🧸</text></svg>`);
+
+const imgUrl = (id, w = 400) => id ? `https://lh3.googleusercontent.com/d/${id}=w${w}` : PH;
+const onImgErr = (el, id) => {
+  if (el.dataset.f === '1') { el.src = PH; return; }
+  el.dataset.f = '1';
+  el.src = `https://drive.google.com/thumbnail?id=${id}&sz=w400`;
+};
+
+/* ---------- حالة التطبيق ---------- */
+let ITEMS = [], CATS = [], CONF = {};
+let cart = load('smiling_cart', {});
+let favs = load('smiling_favs', []);
+let f = { cat: '', price: '', sort: 'def', q: '', list: false };
+
+function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+const money = n => (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const cur = () => CONF['العملة'] || 'ر.س';
+const yes = v => String(v || '').trim() === 'نعم';
+
+/* ---------- قراءة CSV ---------- */
+function parseCSV(t) {
+  const rows = []; let row = [], cell = '', q = false;
+  for (let i = 0; i < t.length; i++) {
+    const c = t[i];
+    if (q) {
+      if (c === '"') { if (t[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(cell); cell = ''; }
+    else if (c === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; }
+    else if (c !== '\r') cell += c;
+  }
+  if (cell || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+function toObjects(rows) {
+  if (!rows.length) return [];
+  const h = rows[0].map(x => x.trim());
+  return rows.slice(1).map(r => {
+    const o = {}; h.forEach((k, i) => o[k] = (r[i] ?? '').trim()); return o;
+  });
+}
+async function fetchSheet(name) {
+  const r = await fetch(CSV(name));
+  if (!r.ok) throw new Error('sheet ' + name + ' ' + r.status);
+  return toObjects(parseCSV(await r.text()));
+}
+
+/* ---------- التحميل ---------- */
+async function boot() {
+  document.getElementById('state').innerHTML = '';
+  document.getElementById('grid').innerHTML =
+    Array.from({ length: 10 }, () => '<div class="skel"><div class="a"></div><div class="b"></div><div class="b" style="width:60%"></div></div>').join('');
+
+  try {
+    const [items, cats, conf] = await Promise.all([
+      fetchSheet('الاصناف'), fetchSheet('الاقسام').catch(() => []), fetchSheet('الاعدادات').catch(() => [])
+    ]);
+
+    conf.forEach(r => { if (r['المفتاح']) CONF[r['المفتاح']] = r['القيمة']; });
+
+    ITEMS = items.filter(r => r['كود الصنف'] && r['اسم الصنف'] && !(String(r['إظهار']).trim() === 'لا'))
+      .map(r => {
+        const price = parseFloat(r['سعر الحبة']) || 0;
+        const pcs = parseInt(r['عدد الحبات بالكرتون']) || 0;
+        const ctn = parseFloat(r['سعر الكرتون']) || (pcs ? price * pcs : 0);
+        return {
+          code: r['كود الصنف'], name: r['اسم الصنف'], cat: r['القسم'] || 'غير مصنّف',
+          unit: r['وحدة البيع'] || 'حبة',
+          price, pcs, ctn,
+          stock: parseInt(r['المخزون']) || 0,
+          s01: parseInt(r['الرئيسي']) || 0,
+          s02: parseInt(r['فرع02']) || 0, s05: parseInt(r['فرع05']) || 0,
+          img: r['معرف الصورة'] || '', offer: yes(r['عرض']), isNew: yes(r['جديد']),
+          tags: r['وسوم'] || '', ord: parseFloat(r['ترتيب']) || 9999, note: r['ملاحظة'] || ''
+        };
+      });
+
+    if (!yes(CONF['اظهار_الاصناف_بلا_صورة'])) ITEMS = ITEMS.filter(i => i.img);
+
+    CATS = cats.filter(c => c['اسم القسم'] && String(c['إظهار']).trim() !== 'لا')
+      .map(c => ({ name: c['اسم القسم'], ord: parseFloat(c['الترتيب']) || 999, icon: c['أيقونة'] || '' }))
+      .sort((a, b) => a.ord - b.ord);
+    if (!CATS.length) {
+      CATS = [...new Set(ITEMS.map(i => i.cat))].sort().map(n => ({ name: n, icon: '' }));
+    }
+
+    applyConf(); renderCats(); render(); deepLink();
+  } catch (e) {
+    document.getElementById('grid').innerHTML = '';
+    document.getElementById('state').innerHTML =
+      `<div class="state"><div class="em">🔌</div><b>ما قدرت أقرأ بيانات الأصناف</b>
+       تأكد أن ملف جوجل شيت مشارك «أي شخص لديه الرابط — مُطّلع»<br>
+       وأن أسماء الصفحات: <code>الاصناف</code> و <code>الاقسام</code> و <code>الاعدادات</code>
+       <div style="margin-top:14px"><button class="pill" onclick="boot()">إعادة المحاولة</button></div></div>`;
+  }
+}
+
+function applyConf() {
+  const g = (k, d) => CONF[k] || d;
+  document.getElementById('storeName').textContent = g('اسم_المتجر', 'الطفل المبتسم');
+  document.getElementById('storeDesc').textContent = g('وصف_المتجر', 'كتالوج الجملة');
+  document.title = g('اسم_المتجر', 'الطفل المبتسم') + ' — كتالوج الجملة';
+  if (g('بانر_العروض', '')) {
+    document.getElementById('bannerTitle').textContent = g('بانر_العروض', '');
+    document.getElementById('bannerSub').textContent = g('رسالة_ترحيب', '');
+  }
+  document.getElementById('fShip').textContent = g('نص_الشحن', '—');
+  document.getElementById('fPay').textContent = g('نص_الدفع', '—');
+  document.getElementById('fNote').textContent = g('تنويه_الاسعار', '—');
+  const w = g('رقم_واتساب', WHATSAPP_FALLBACK);
+  document.getElementById('fContact').innerHTML = w
+    ? `واتساب: <a href="https://wa.me/${w.replace(/\D/g, '')}" style="color:#fff">${w}</a>` : '—';
+}
+
+/* ---------- الأقسام ---------- */
+function renderCats() {
+  const nOffer = ITEMS.filter(i => i.offer).length;
+  const nNew = ITEMS.filter(i => i.isNew).length;
+  let h = `<button class="chip ${f.cat === '' ? 'on' : ''}" data-c="">الكل (${ITEMS.length})</button>`;
+  if (nOffer) h += `<button class="chip hot ${f.cat === '__offer' ? 'on' : ''}" data-c="__offer">🔥 العروض (${nOffer})</button>`;
+  if (nNew) h += `<button class="chip hot ${f.cat === '__new' ? 'on' : ''}" data-c="__new">✨ الجديد (${nNew})</button>`;
+  h += `<button class="chip ${f.cat === '__fav' ? 'on' : ''}" data-c="__fav">♡ المفضلة (${favs.length})</button>`;
+  CATS.forEach(c => {
+    const n = ITEMS.filter(i => i.cat === c.name).length;
+    if (!n) return;
+    h += `<button class="chip ${f.cat === c.name ? 'on' : ''}" data-c="${esc(c.name)}">${c.icon} ${esc(c.name)} (${n})</button>`;
+  });
+  const el = document.getElementById('cats');
+  el.innerHTML = h;
+  el.querySelectorAll('.chip').forEach(b => b.onclick = () => {
+    f.cat = b.dataset.c; renderCats(); render(); window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+}
+
+/* ---------- الفلترة ---------- */
+function filtered() {
+  let a = ITEMS.slice();
+  if (f.cat === '__offer') a = a.filter(i => i.offer);
+  else if (f.cat === '__new') a = a.filter(i => i.isNew);
+  else if (f.cat === '__fav') a = a.filter(i => favs.includes(i.code));
+  else if (f.cat) a = a.filter(i => i.cat === f.cat);
+
+  if (f.price) {
+    const [lo, hi] = f.price.split('-').map(Number);
+    a = a.filter(i => i.price >= lo && i.price < hi);
+  }
+  if (f.q) {
+    const t = f.q.toLowerCase().trim();
+    a = a.filter(i => (i.name + ' ' + i.code + ' ' + i.tags + ' ' + i.cat).toLowerCase().includes(t));
+  }
+  const s = f.sort;
+  if (s === 'p-asc') a.sort((x, y) => x.price - y.price);
+  else if (s === 'p-desc') a.sort((x, y) => y.price - x.price);
+  else if (s === 'name') a.sort((x, y) => x.name.localeCompare(y.name, 'ar'));
+  else if (s === 'code') a.sort((x, y) => x.code.localeCompare(y.code));
+  else a.sort((x, y) => (x.ord - y.ord) || (y.offer - x.offer) || (y.isNew - x.isNew));
+  return a;
+}
+
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function render() {
+  const a = filtered();
+  document.getElementById('count').textContent = a.length + ' صنف';
+  const g = document.getElementById('grid');
+  g.className = 'grid' + (f.list ? ' list' : '');
+
+  if (!a.length) {
+    g.innerHTML = '';
+    document.getElementById('state').innerHTML =
+      `<div class="state"><div class="em">🔎</div><b>لا توجد أصناف مطابقة</b>جرّب تغيير القسم أو نطاق السعر</div>`;
+    return;
+  }
+  document.getElementById('state').innerHTML = '';
+  g.innerHTML = a.map(cardHTML).join('');
+  bindCards();
+}
+
+function cardHTML(i) {
+  const inCart = cart[i.code];
+  return `
+  <article class="card" data-code="${esc(i.code)}">
+    <div class="thumb js-open">
+      <img loading="lazy" src="${imgUrl(i.img, 400)}" alt="${esc(i.name)}"
+           onerror="onImgErr(this,'${i.img}')">
+      <div class="tags">
+        ${i.offer ? '<span class="tag">عرض</span>' : ''}
+        ${i.isNew ? '<span class="tag new">جديد</span>' : ''}
+        ${i.stock <= 0 ? '<span class="tag out">غير متوفر</span>' : ''}
+      </div>
+      <button class="fav ${favs.includes(i.code) ? 'on' : ''} js-fav">${favs.includes(i.code) ? '♥' : '♡'}</button>
+    </div>
+    <div class="body">
+      <div class="code">${esc(i.code)}</div>
+      <div class="name js-open">${esc(i.name)}</div>
+      <div class="prices">
+        <span class="p-main">${money(i.price)}</span><span class="p-cur">${cur()} / ${esc(i.unit)}</span>
+      </div>
+      ${i.pcs ? `<div class="carton">الكرتون <b>${i.pcs}</b> ${esc(i.unit)} · <b>${money(i.ctn)}</b> ${cur()}</div>` : ''}
+      <div class="qbtns">
+        <button class="qb js-q" data-q="3">3</button>
+        <button class="qb js-q" data-q="6">6</button>
+        <button class="qb js-q" data-q="12">12</button>
+        <button class="qb ctn js-q ${i.pcs ? '' : 'off'}" data-q="ctn" ${i.pcs ? '' : 'title="لم يُحدَّد عدد الحبات بالكرتون"'}>كرتون</button>
+      </div>
+      <div class="addrow">
+        <input class="qty-in js-qty" type="number" min="1" value="${inCart ? inCart.qty : 1}">
+        <button class="add ${inCart ? 'in' : ''} js-add">${inCart ? '✓ في السلة' : 'إضافة'}</button>
+      </div>
+    </div>
+  </article>`;
+}
+
+function bindCards() {
+  document.querySelectorAll('.card').forEach(c => {
+    const code = c.dataset.code, it = ITEMS.find(x => x.code === code);
+    c.querySelectorAll('.js-open').forEach(e => e.onclick = () => openItem(code));
+    c.querySelector('.js-fav').onclick = e => { e.stopPropagation(); toggleFav(code); };
+    const qty = c.querySelector('.js-qty');
+    c.querySelectorAll('.js-q').forEach(b => b.onclick = () => {
+      if (b.dataset.q === 'ctn' && !it.pcs) { toast('لم يُحدَّد عدد الحبات بالكرتون لهذا الصنف'); return; }
+      const v = b.dataset.q === 'ctn' ? it.pcs : +b.dataset.q;
+      qty.value = v; addToCart(code, v);
+    });
+    c.querySelector('.js-add').onclick = () => addToCart(code, Math.max(1, +qty.value || 1));
+  });
+}
+
+/* ---------- المفضلة ---------- */
+function toggleFav(code) {
+  const i = favs.indexOf(code);
+  if (i > -1) favs.splice(i, 1); else favs.push(code);
+  save('smiling_favs', favs); renderCats(); render(); updBadges();
+}
+
+/* ---------- السلة ---------- */
+function addToCart(code, qty) {
+  const it = ITEMS.find(x => x.code === code); if (!it) return;
+  cart[code] = { qty: Math.max(1, qty) };
+  save('smiling_cart', cart); updBadges(); render(); renderCart(); toast(`أُضيف ${qty} ${it.unit} من ${it.name}`);
+}
+function setQty(code, qty) {
+  if (qty <= 0) delete cart[code]; else cart[code] = { qty };
+  save('smiling_cart', cart); updBadges(); renderCart(); render();
+}
+function cartLines() {
+  return Object.keys(cart).map(code => {
+    const it = ITEMS.find(x => x.code === code); if (!it) return null;
+    return { it, qty: cart[code].qty, total: it.price * cart[code].qty };
+  }).filter(Boolean);
+}
+function updBadges() {
+  const n = Object.keys(cart).length, b = document.getElementById('cartBadge');
+  b.textContent = n; b.classList.toggle('hidden', !n);
+  const fb = document.getElementById('favBadge');
+  fb.textContent = favs.length; fb.classList.toggle('hidden', !favs.length);
+}
+
+function renderCart() {
+  const L = cartLines(), body = document.getElementById('cartBody'), foot = document.getElementById('cartFoot');
+  if (!L.length) {
+    body.innerHTML = `<div class="state"><div class="em">🛒</div><b>السلة فارغة</b>ابدأ بإضافة الأصناف</div>`;
+    foot.innerHTML = ''; return;
+  }
+  body.innerHTML = L.map(l => `
+    <div class="ci" data-c="${esc(l.it.code)}">
+      <img src="${imgUrl(l.it.img, 120)}" onerror="onImgErr(this,'${l.it.img}')" alt="">
+      <div class="m">
+        <div class="n">${esc(l.it.name)}</div>
+        <div class="c">${esc(l.it.code)} · ${money(l.it.price)} ${cur()}</div>
+        <div class="stepper">
+          <button class="js-inc">+</button>
+          <input class="js-n" type="number" min="1" value="${l.qty}">
+          <button class="js-dec">−</button>
+        </div>
+      </div>
+      <div class="t"><button class="rm js-rm">✕</button><b>${money(l.total)}</b></div>
+    </div>`).join('');
+
+  body.insertAdjacentHTML('beforeend', `
+    <div style="margin-top:14px;background:var(--surface);border-radius:13px;padding:13px;box-shadow:var(--shadow)">
+      <div style="font-weight:700;margin-bottom:9px">بيانات الطلب</div>
+      <div class="field"><label>اسم العميل / المحل</label><input id="cName" placeholder="مثال: مؤسسة الأمل للألعاب"></div>
+      <div class="field"><label>رقم الجوال</label><input id="cPhone" type="tel" inputmode="tel" placeholder="05xxxxxxxx"></div>
+      <div class="field"><label>المدينة</label><input id="cCity" placeholder="جدة / الدمام / …"></div>
+      <div class="field"><label>طريقة الاستلام</label>
+        <select id="cShip">
+          <option>استلام من فرع جدة</option>
+          <option>استلام من فرع الدمام</option>
+          <option>شحن عبر شركة نقل</option>
+        </select></div>
+      <div class="field" style="margin-bottom:0"><label>ملاحظات</label><textarea id="cNote" rows="2" placeholder="أي ملاحظة على الطلب"></textarea></div>
+    </div>`);
+
+  body.querySelectorAll('.ci').forEach(el => {
+    const c = el.dataset.c, q = cart[c].qty;
+    el.querySelector('.js-inc').onclick = () => setQty(c, q + 1);
+    el.querySelector('.js-dec').onclick = () => setQty(c, q - 1);
+    el.querySelector('.js-n').onchange = e => setQty(c, Math.max(1, +e.target.value || 1));
+    el.querySelector('.js-rm').onclick = () => setQty(c, 0);
+  });
+
+  const pieces = L.reduce((s, l) => s + l.qty, 0);
+  const total = L.reduce((s, l) => s + l.total, 0);
+  const min = parseFloat(CONF['الحد_الادنى_للطلب']) || 0;
+  const under = min > 0 && total < min;
+
+  foot.innerHTML = `
+    <div class="sumrow"><span>عدد الأصناف</span><span>${L.length}</span></div>
+    <div class="sumrow"><span>إجمالي القطع</span><span>${pieces}</span></div>
+    <div class="sumrow tot"><span>الإجمالي</span><span>${money(total)} ${cur()}</span></div>
+    ${under ? `<div class="note" style="color:var(--danger)">الحد الأدنى للطلب ${money(min)} ${cur()}</div>` : ''}
+    <button class="wa" id="sendWA" ${under ? 'disabled style="opacity:.5"' : ''}>
+      <span style="font-size:18px">💬</span> إرسال الطلب على واتساب</button>
+    <button class="ghost" id="copyOrder">📋 نسخ الطلب كنص</button>
+    <button class="ghost" id="clearCart">🗑 تفريغ السلة</button>
+    <div class="note">${esc(CONF['تنويه_الاسعار'] || '')}</div>`;
+
+  document.getElementById('sendWA').onclick = sendWhatsApp;
+  document.getElementById('copyOrder').onclick = () => {
+    navigator.clipboard.writeText(orderText()).then(() => toast('تم نسخ الطلب ✓'));
+  };
+  document.getElementById('clearCart').onclick = () => {
+    if (confirm('تفريغ السلة؟')) { cart = {}; save('smiling_cart', cart); updBadges(); renderCart(); render(); }
+  };
+}
+
+function orderText() {
+  const L = cartLines();
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const pieces = L.reduce((s, l) => s + l.qty, 0);
+  const total = L.reduce((s, l) => s + l.total, 0);
+  let t = `🧾 *طلبية جديدة — ${CONF['اسم_المتجر'] || 'الطفل المبتسم'}*\n`;
+  t += `التاريخ: ${new Date().toLocaleDateString('en-GB')}\n`;
+  if (g('cName')) t += `العميل: ${g('cName')}\n`;
+  if (g('cPhone')) t += `الجوال: ${g('cPhone')}\n`;
+  if (g('cCity')) t += `المدينة: ${g('cCity')}\n`;
+  if (g('cShip')) t += `الاستلام: ${g('cShip')}\n`;
+  t += `──────────────\n`;
+  L.forEach((l, n) => {
+    const ctn = l.it.pcs && l.qty % l.it.pcs === 0 ? ` (${l.qty / l.it.pcs} كرتون)` : '';
+    t += `${n + 1}) ${l.it.code} — ${l.it.name}\n   ${l.qty} ${l.it.unit}${ctn} × ${money(l.it.price)} = *${money(l.total)}*\n`;
+  });
+  t += `──────────────\n`;
+  t += `عدد الأصناف: ${L.length}\nإجمالي القطع: ${pieces}\n*الإجمالي: ${money(total)} ${cur()}*\n`;
+  if (g('cNote')) t += `\nملاحظات: ${g('cNote')}`;
+  return t;
+}
+
+function sendWhatsApp() {
+  const num = (CONF['رقم_واتساب'] || WHATSAPP_FALLBACK).replace(/\D/g, '');
+  if (!num) { alert('لم يتم ضبط رقم الواتساب في صفحة الاعدادات'); return; }
+  window.open(`https://wa.me/${num}?text=${encodeURIComponent(orderText())}`, '_blank');
+}
+
+/* ---------- نافذة الصنف ---------- */
+function openItem(code) {
+  const i = ITEMS.find(x => x.code === code); if (!i) return;
+  const showStock = yes(CONF['اظهار_المخزون']);
+  document.getElementById('mbox').innerHTML = `
+    <button class="mclose" onclick="closeModal()">✕</button>
+    <div class="mgrid">
+      <div class="mimg"><img src="${imgUrl(i.img, 900)}" onerror="onImgErr(this,'${i.img}')" alt="${esc(i.name)}"></div>
+      <div class="minfo">
+        <div class="code">${esc(i.code)}</div>
+        <h2>${esc(i.name)}</h2>
+        <div class="prices">
+          <span class="p-main" style="font-size:26px">${money(i.price)}</span><span class="p-cur">${cur()} / ${esc(i.unit)}</span>
+          <span class="p-sub">سعر الجملة</span>
+        </div>
+        <div>
+          <div class="spec"><span>القسم</span><b>${esc(i.cat)}</b></div>
+          <div class="spec"><span>وحدة البيع</span><b>${esc(i.unit)}</b></div>
+          ${i.pcs ? `<div class="spec"><span>عدد الحبات بالكرتون</span><b>${i.pcs}</b></div>
+                     <div class="spec"><span>سعر الكرتون</span><b>${money(i.ctn)} ${cur()}</b></div>` : ''}
+          ${showStock ? `<div class="spec"><span>المتوفر</span><b>${i.stock} ${esc(i.unit)} (الرئيسي ${i.s01} · فرع02 ${i.s02} · فرع05 ${i.s05})</b></div>`
+                      : `<div class="spec"><span>الحالة</span><b style="color:${i.stock > 0 ? 'var(--ok)' : 'var(--danger)'}">${i.stock > 0 ? 'متوفر' : 'غير متوفر حالياً'}</b></div>`}
+          ${i.note ? `<div class="spec"><span>ملاحظة</span><b>${esc(i.note)}</b></div>` : ''}
+        </div>
+        <div class="qbtns">
+          <button class="qb" onclick="mq(3)">3</button>
+          <button class="qb" onclick="mq(6)">6</button>
+          <button class="qb" onclick="mq(12)">12</button>
+          <button class="qb ctn ${i.pcs ? '' : 'off'}" onclick="${i.pcs ? `mq(${i.pcs})` : `toast('لم يُحدَّد عدد الحبات بالكرتون')`}">كرتون</button>
+        </div>
+        <div class="addrow">
+          <input class="qty-in" id="mQty" type="number" min="1" value="${cart[i.code] ? cart[i.code].qty : 1}">
+          <button class="add" onclick="addToCart('${esc(i.code)}', Math.max(1,+document.getElementById('mQty').value||1)); closeModal();">أضف للسلة</button>
+        </div>
+        <button class="ghost" onclick="shareItem('${esc(i.code)}')">🔗 نسخ رابط الصنف</button>
+      </div>
+    </div>`;
+  document.getElementById('modal').classList.add('on');
+  document.getElementById('scrim').classList.add('on');
+}
+function mq(v) { document.getElementById('mQty').value = v; }
+function closeModal() {
+  document.getElementById('modal').classList.remove('on');
+  if (!document.querySelector('.drawer.on')) document.getElementById('scrim').classList.remove('on');
+}
+function shareItem(code) {
+  const u = location.origin + location.pathname + '?item=' + encodeURIComponent(code);
+  navigator.clipboard.writeText(u).then(() => toast('تم نسخ الرابط ✓'));
+}
+
+/* ---------- المفضلة (درج) ---------- */
+function renderFav() {
+  const a = ITEMS.filter(i => favs.includes(i.code));
+  document.getElementById('favBody').innerHTML = a.length
+    ? a.map(i => `<div class="ci"><img src="${imgUrl(i.img,120)}" onerror="onImgErr(this,'${i.img}')" alt="">
+        <div class="m"><div class="n">${esc(i.name)}</div><div class="c">${esc(i.code)} · ${money(i.price)} ${cur()}</div>
+        <button class="qb" style="margin-top:6px;padding:5px 12px" onclick="addToCart('${esc(i.code)}',1)">أضف للسلة</button></div>
+        <div class="t"><button class="rm" onclick="toggleFav('${esc(i.code)}');renderFav()">✕</button></div></div>`).join('')
+    : `<div class="state"><div class="em">♡</div><b>لا توجد مفضلة</b>اضغط ♡ على أي صنف</div>`;
+}
+
+/* ---------- طلب سريع بالأكواد ---------- */
+function quickOrder() {
+  const raw = prompt('الصق أكواد الأصناف (كل كود بسطر، أو: كود=الكمية)\nمثال:\n800-02122=12\n500-00302=3');
+  if (!raw) return;
+  let ok = 0, bad = [];
+  raw.split(/[\n,،]+/).forEach(line => {
+    const p = line.split(/[=\s:]+/).filter(Boolean);
+    if (!p.length) return;
+    const it = ITEMS.find(x => x.code.toLowerCase() === p[0].trim().toLowerCase());
+    if (it) { cart[it.code] = { qty: Math.max(1, parseInt(p[1]) || 1) }; ok++; }
+    else bad.push(p[0]);
+  });
+  save('smiling_cart', cart); updBadges(); render(); renderCart(); openDrawer('cart');
+  toast(`أُضيف ${ok} صنف${bad.length ? ' — لم يُعثر على: ' + bad.join(', ') : ''}`);
+}
+
+/* ---------- الأدراج والتنبيهات ---------- */
+function openDrawer(id) {
+  document.querySelectorAll('.drawer').forEach(d => d.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+  document.getElementById('scrim').classList.add('on');
+}
+function closeAll() {
+  document.querySelectorAll('.drawer').forEach(d => d.classList.remove('on'));
+  document.getElementById('modal').classList.remove('on');
+  document.getElementById('scrim').classList.remove('on');
+}
+let toastT;
+function toast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div'); t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#14182b;color:#fff;padding:11px 20px;border-radius:12px;z-index:200;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.3);max-width:90vw;text-align:center;pointer-events:none;transition:opacity .3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = '0', 2200);
+}
+
+function deepLink() {
+  const p = new URLSearchParams(location.search);
+  if (p.get('item')) openItem(p.get('item'));
+  if (p.get('cat')) { f.cat = p.get('cat'); renderCats(); render(); }
+}
+
+/* ---------- الأحداث ---------- */
+let qT;
+document.getElementById('q').oninput = e => { clearTimeout(qT); qT = setTimeout(() => { f.q = e.target.value; render(); }, 220); };
+document.getElementById('fPrice').onchange = e => { f.price = e.target.value; render(); };
+document.getElementById('fSort').onchange = e => { f.sort = e.target.value; render(); };
+document.getElementById('fView').onclick = e => { f.list = !f.list; e.target.classList.toggle('on', f.list); e.target.textContent = f.list ? '▦ شبكة' : '☰ قائمة'; render(); };
+document.getElementById('btnQuick').onclick = quickOrder;
+document.getElementById('btnCart').onclick = () => { renderCart(); openDrawer('cart'); };
+document.getElementById('btnFav').onclick = () => { renderFav(); openDrawer('fav'); };
+document.getElementById('cartClose').onclick = closeAll;
+document.getElementById('favClose').onclick = closeAll;
+document.getElementById('scrim').onclick = closeAll;
+document.getElementById('modal').onclick = e => { if (e.target.id === 'modal') closeModal(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
+
+updBadges();
+boot();
+</script>
+</body>
+</html>
