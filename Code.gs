@@ -53,7 +53,10 @@ var ITEM_HEADERS = [
   'وسوم',                 // O
   'إظهار',                // P
   'ترتيب',                // Q
-  'ملاحظة'                // R
+  'ملاحظة',               // R
+  'الفئة العمرية',        // S  يدوي: مثال 3–5 سنوات
+  'الماركة',              // T  يدوي
+  'النوع'                 // U  يدوي: ولد / بنت / للجميع
 ];
 
 // أعمدة تأتي من قاعدة البيانات وتُحدَّث في كل استيراد (0-based)
@@ -104,9 +107,8 @@ function setupSheets() {
 
   // --- الاصناف ---
   var it = ss.getSheetByName(SH_ITEMS) || ss.insertSheet(SH_ITEMS);
-  if (it.getLastRow() === 0 || it.getRange(1,1).getValue() !== ITEM_HEADERS[0]) {
-    it.getRange(1,1,1,ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
-  }
+  // نحدّث صف العناوين دائماً حتى تضاف حقول الفلاتر للملفات القائمة.
+  it.getRange(1,1,1,ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
   it.getRange(1,1,1,ITEM_HEADERS.length)
     .setFontWeight('bold').setBackground('#1f3a93').setFontColor('#ffffff');
   it.setFrozenRows(1);
@@ -153,8 +155,10 @@ function setupSheets() {
     cf.getRange(1,1,1,2).setValues([['المفتاح','القيمة']]);
     cf.getRange(2,1,14,2).setValues([
       ['اسم_المتجر',                'الطفل المبتسم لألعاب الأطفال'],
-      ['وصف_المتجر',               'جملة ألعاب الأطفال — جدة'],
-      ['رقم_واتساب',               '9665557282942'],
+      ['وصف_المتجر',               'جملة ألعاب الأطفال — جدة والدمام'],
+      ['رقم_واتساب',               '9665XXXXXXXX'],
+      ['رقم_واتساب_فرع02',         ''],
+      ['رقم_واتساب_فرع05',         ''],
       ['العملة',                   'ر.س'],
       ['رسالة_ترحيب',              'أهلاً بك 👋 تصفح الأصناف وأضف طلبك ثم أرسله لنا مباشرة على واتساب'],
       ['اظهار_المخزون',            'لا'],
@@ -168,6 +172,7 @@ function setupSheets() {
   }
   cf.getRange(1,1,1,2).setFontWeight('bold').setBackground('#1f3a93').setFontColor('#ffffff');
   cf.setFrozenRows(1); cf.setRightToLeft(true);
+  ensureSettings_(cf);
 
   // --- تعليمات ---
   var hp = ss.getSheetByName(SH_HELP) || ss.insertSheet(SH_HELP);
@@ -190,6 +195,23 @@ function setupSheets() {
   hp.setColumnWidth(1, 700);
 
   say_('تم إعداد الصفحات ✅');
+}
+
+/** يضيف إعدادات الواجهة الجديدة للملف القائم من دون لمس قيمه الحالية. */
+function ensureSettings_(sheet) {
+  var defaults = [
+    ['عن_المتجر', 'نسعد بخدمتكم وتلبية احتياجاتكم من ألعاب الأطفال بالجملة.'],
+    ['السجل_التجاري', ''],
+    ['عنوان_المتجر', ''],
+    ['رابط_الخريطة', '']
+  ];
+  var have = {};
+  if (sheet.getLastRow() > 1) {
+    var rows = sheet.getRange(2,1,sheet.getLastRow()-1,1).getValues();
+    for (var i = 0; i < rows.length; i++) have[String(rows[i][0]).trim()] = true;
+  }
+  var missing = defaults.filter(function (row) { return !have[row[0]]; });
+  if (missing.length) sheet.getRange(sheet.getLastRow()+1,1,missing.length,2).setValues(missing);
 }
 
 /* ================== 2) استيراد الأصناف ================== */
@@ -287,7 +309,7 @@ function syncImages() {
   if (!sh || sh.getLastRow() < 2) throw new Error('لا توجد أصناف — شغّل الاستيراد أولاً');
 
   var imgById   = {};   // كود -> معرف الصورة
-  var catByCode = {};   // كود -> اسم القسم
+  var catByCode = {};   // كود -> قائمة الأقسام (الصنف قد يكون في أكثر من مجلد)
   var isNew     = {};   // كود -> جديد
   var cats      = {};
 
@@ -304,7 +326,8 @@ function syncImages() {
     var catName = f.getName().trim();
     cats[catName] = true;
     scanFolderObj_(f, function (code, id) {
-      if (!catByCode[code]) catByCode[code] = catName;
+      if (!catByCode[code]) catByCode[code] = [];
+      if (catByCode[code].indexOf(catName) === -1) catByCode[code].push(catName);
       if (!imgById[code]) imgById[code] = id;
     });
   }
@@ -323,15 +346,19 @@ function syncImages() {
   var hitImg = 0, hitCat = 0;
 
   for (var i = 0; i < n; i++) {
-    var code = String(data[i][0]).trim();
+    var code = codeKey_(data[i][0]);
     if (!code) continue;
     var base = code.replace(/-1$/, '');           // 800-02655-1  ->  800-02655
 
-    var img = imgById[code] || imgById[base];
-    if (img) { data[i][11] = img; hitImg++; }
+    var img = imgById[code] || imgById[base] || '';
+    // لا تبقِ معرف صورة قديمة إن أزيلت من درايف.
+    data[i][11] = img;
+    if (img) hitImg++;
 
-    var cat = catByCode[code] || catByCode[base];
-    if (cat && !data[i][2]) { data[i][2] = cat; hitCat++; }
+    var cat = catByCode[code] || catByCode[base] || [];
+    // مجلدات Drive هي مرجع التصنيف؛ الفاصل | يسمح بظهور الصنف في أكثر من قسم.
+    data[i][2] = cat.join(' | ');
+    if (cat.length) hitCat++;
 
     if (isNew[code] || isNew[base]) data[i][13] = 'نعم';
   }
@@ -362,17 +389,23 @@ function scanFolderObj_(folder, cb) {
     var mt = f.getMimeType();
     if (mt.indexOf('image/') !== 0) continue;
     var code = codeFromName_(f.getName());
-    if (code) cb(code, f.getId());
+    if (code) cb(codeKey_(code), f.getId());
   }
+  // بعض الأقسام تحتوي مجلدات فرعية؛ نمسحها أيضاً بدلاً من فقد صورها.
+  var subfolders = folder.getFolders();
+  while (subfolders.hasNext()) scanFolderObj_(subfolders.next(), cb);
 }
 
 /** 800-02122.jpg   |   500-00302 - سيارة كهربائي.jpg   ->  الكود */
 function codeFromName_(name) {
-  var base = name.replace(/\.[a-zA-Z0-9]+$/, '');
-  base = base.split(' - ')[0];
-  base = base.split('_')[0];
-  return base.trim();
+  var base = String(name).replace(/\.[a-zA-Z0-9]+$/, '').trim();
+  // يقبل 800-02122.jpg و800-02122 - لعبة.jpg و800-02122لعبة.jpg.
+  var m = base.match(/^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)/);
+  return m ? m[1] : '';
 }
+
+/** مفتاح داخلي للمطابقة فقط؛ لا يغيّر كود الصنف المعروض. */
+function codeKey_(value) { return String(value || '').trim().toUpperCase(); }
 
 /* ================== 4) فتح صلاحية العرض ================== */
 
