@@ -71,6 +71,7 @@ function onOpen() {
     .addItem('1) إعداد أولي للصفحات', 'setupSheets')
     .addItem('2) استيراد الأصناف من قاعدة بيانات الخوارزمي', 'importItems')
     .addItem('3) مزامنة الصور والأقسام من درايف', 'syncImages')
+    .addItem('تقرير الأصناف بلا صورة أو قسم', 'reportSyncIssues')
     .addItem('4) فتح صلاحية عرض الصور للعملاء', 'makeImagesPublic')
     .addSeparator()
     .addItem('تشغيل الكل (2 ثم 3)', 'runAll')
@@ -109,6 +110,8 @@ function setupSheets() {
   var it = ss.getSheetByName(SH_ITEMS) || ss.insertSheet(SH_ITEMS);
   // نحدّث صف العناوين دائماً حتى تضاف حقول الفلاتر للملفات القائمة.
   it.getRange(1,1,1,ITEM_HEADERS.length).setValues([ITEM_HEADERS]);
+  // كود الصنف معرّف نصي، لا تاريخ ولا رقم. يمنع 2264-1 → 2264/01/01.
+  it.getRange(1,1,Math.max(it.getMaxRows(), 1),1).setNumberFormat('@');
   it.getRange(1,1,1,ITEM_HEADERS.length)
     .setFontWeight('bold').setBackground('#1f3a93').setFontColor('#ffffff');
   it.setFrozenRows(1);
@@ -148,6 +151,7 @@ function setupSheets() {
   }
   ct.getRange(1,1,1,4).setFontWeight('bold').setBackground('#1f3a93').setFontColor('#ffffff');
   ct.setFrozenRows(1); ct.setRightToLeft(true);
+  applyCategoryValidation_(it, ct);
 
   // --- الاعدادات ---
   var cf = ss.getSheetByName(SH_CONF) || ss.insertSheet(SH_CONF);
@@ -214,6 +218,18 @@ function ensureSettings_(sheet) {
   if (missing.length) sheet.getRange(sheet.getLastRow()+1,1,missing.length,2).setValues(missing);
 }
 
+/** قائمة منسدلة في عمود «القسم» مصدرها ورقة الأقسام نفسها. */
+function applyCategoryValidation_(itemsSheet, categoriesSheet) {
+  var count = Math.max(categoriesSheet.getLastRow() - 1, 1);
+  var source = categoriesSheet.getRange(2, 1, count, 1);
+  var rule = SpreadsheetApp.newDataValidation()
+    .requireValueInRange(source, true)
+    .setAllowInvalid(true) // يبقي الأقسام المتعددة المفصولة بـ | صالحة.
+    .setHelpText('اختر قسماً من السهم. للأقسام المتعددة اكتب أسماءها مفصولة بالرمز |.')
+    .build();
+  itemsSheet.getRange(2, 3, Math.max(itemsSheet.getMaxRows() - 1, 1), 1).setDataValidation(rule);
+}
+
 /* ================== 2) استيراد الأصناف ================== */
 
 function importItems() {
@@ -226,34 +242,69 @@ function importItems() {
 
   var last = sh.getLastRow();
   var existing = last > 1 ? sh.getRange(2, 1, last - 1, ITEM_HEADERS.length).getValues() : [];
-  var index = {};
-  for (var i = 0; i < existing.length; i++) {
-    var k = String(existing[i][0]).trim();
-    if (k) index[k] = i;
-  }
+  // يعيد تحويل الأكواد التي فسرها الشيت كتاريخ، ويدمج النسخ المكررة منها.
+  var normalized = normalizeExistingItems_(existing);
+  existing = normalized.rows;
+  var index = normalized.index;
 
   var added = 0, updated = 0;
   for (var r = 0; r < rows.length; r++) {
     var src = rows[r];
-    var code = String(src[0]).trim();
+    var code = restoreItemCode_(src[0]);
     if (!code) continue;
+    var key = codeKey_(code);
 
-    if (index.hasOwnProperty(code)) {
-      var row = existing[index[code]];
+    if (index.hasOwnProperty(key)) {
+      var row = existing[index[key]];
+      row[0] = code;
       for (var c = 0; c < DB_COLS.length; c++) row[DB_COLS[c]] = src[DB_COLS[c]];
       updated++;
     } else {
       var nr = new Array(ITEM_HEADERS.length).fill('');
       for (var j = 0; j < ITEM_HEADERS.length && j < src.length; j++) nr[j] = src[j];
+      nr[0] = code;
       nr[15] = 'نعم';
       existing.push(nr);
-      index[code] = existing.length - 1;
+      index[key] = existing.length - 1;
       added++;
     }
   }
 
-  if (existing.length) sh.getRange(2, 1, existing.length, ITEM_HEADERS.length).setValues(existing);
-  say_('تم الاستيراد ✅\nجديد: ' + added + '   محدَّث: ' + updated);
+  // طبّق النص قبل الكتابة؛ وإلا قد يعيد Sheets تحويل الكود إلى تاريخ.
+  if (existing.length) {
+    sh.getRange(2,1,existing.length,1).setNumberFormat('@');
+    sh.getRange(2, 1, existing.length, ITEM_HEADERS.length).setValues(existing);
+  }
+  // امسح الصفوف الزائدة التي نشأت من التكرار القديم، من دون حذف الصفوف خارج النطاق.
+  if (last - 1 > existing.length) sh.getRange(existing.length + 2, 1, last - 1 - existing.length, ITEM_HEADERS.length).clearContent();
+  say_('تم الاستيراد ✅\nجديد: ' + added + '   محدَّث: ' + updated + '\nدُمجت تكرارات الأكواد: ' + normalized.merged);
+}
+
+/** يعيد الكود الأصلي عندما حوّله Google Sheets إلى تاريخ مثل 2264/01/01. */
+function restoreItemCode_(value) {
+  if (Object.prototype.toString.call(value) === '[object Date]' && !isNaN(value.getTime())) {
+    return String(value.getFullYear()) + '-' + String(value.getMonth() + 1);
+  }
+  var s = String(value || '').trim();
+  var m = s.match(/^(\d{4})[\/-](\d{1,2})[\/-]\d{1,2}$/);
+  return m ? m[1] + '-' + String(Number(m[2])) : s;
+}
+
+/** يطبع الأكواد، ويدمج الصفوف المكررة مع الحفاظ على أي حقل يدوي غير فارغ. */
+function normalizeExistingItems_(rows) {
+  var out = [], index = {}, merged = 0;
+  var manualCols = [2,6,11,12,13,14,15,16,17,18,19,20];
+  rows.forEach(function(row) {
+    var code = restoreItemCode_(row[0]);
+    row[0] = code;
+    var key = codeKey_(code);
+    if (!key) return;
+    if (!index.hasOwnProperty(key)) { index[key] = out.length; out.push(row); return; }
+    var target = out[index[key]];
+    manualCols.forEach(function(c) { if (!target[c] && row[c]) target[c] = row[c]; });
+    merged++;
+  });
+  return {rows: out, index: index, merged: merged};
 }
 
 /** يقرأ catalog_items.csv من درايف ويعيد صفوفاً مرتبة حسب ITEM_HEADERS */
@@ -313,12 +364,7 @@ function syncImages() {
   var isNew     = {};   // كود -> جديد
   var cats      = {};
 
-  // أ) مجلد جميع الصور
-  scanFolder_(ALL_IMAGES_FOLDER_ID, function (code, id) {
-    if (!imgById[code]) imgById[code] = id;
-  });
-
-  // ب) مجلدات التصنيف: اسم المجلد = القسم
+  // أ) مجلدات التصنيف: اسم المجلد = القسم
   var root = DriveApp.getFolderById(CATEGORY_ROOT_FOLDER_ID);
   var subs = root.getFolders();
   while (subs.hasNext()) {
@@ -326,11 +372,18 @@ function syncImages() {
     var catName = f.getName().trim();
     cats[catName] = true;
     scanFolderObj_(f, function (code, id) {
-      if (!catByCode[code]) catByCode[code] = [];
-      if (catByCode[code].indexOf(catName) === -1) catByCode[code].push(catName);
+      addCategory_(catByCode, code, catName);
       if (!imgById[code]) imgById[code] = id;
     });
   }
+
+  // ب) «جميع الصور»: يربط الصورة دائماً، ويستنتج القسم إذا كانت الصورة
+  // في مجلد فرعي اسمه أحد أقسام التصنيف (يعالج تنظيم Drive المتداخل).
+  scanFolder_(ALL_IMAGES_FOLDER_ID, function (code, id, folderName) {
+    if (!imgById[code]) imgById[code] = id;
+    var detectedCat = String(folderName || '').trim();
+    if (cats[detectedCat]) addCategory_(catByCode, code, detectedCat);
+  });
 
   // ج) مجلد الجديد
   try {
@@ -343,7 +396,7 @@ function syncImages() {
   // د) الكتابة في الشيت
   var n = sh.getLastRow() - 1;
   var data = sh.getRange(2,1,n,ITEM_HEADERS.length).getValues();
-  var hitImg = 0, hitCat = 0;
+  var hitImg = 0, hitCat = 0, noImg = 0, noCat = 0;
 
   for (var i = 0; i < n; i++) {
     var code = codeKey_(data[i][0]);
@@ -353,12 +406,13 @@ function syncImages() {
     var img = imgById[code] || imgById[base] || '';
     // لا تبقِ معرف صورة قديمة إن أزيلت من درايف.
     data[i][11] = img;
-    if (img) hitImg++;
+    if (img) hitImg++; else noImg++;
 
-    var cat = catByCode[code] || catByCode[base] || [];
+    var cat = (catByCode[code] || catByCode[base] || []).slice();
+    applyCategoryRules_(cat, data[i][1]);
     // مجلدات Drive هي مرجع التصنيف؛ الفاصل | يسمح بظهور الصنف في أكثر من قسم.
     data[i][2] = cat.join(' | ');
-    if (cat.length) hitCat++;
+    if (cat.length) hitCat++; else noCat++;
 
     if (isNew[code] || isNew[base]) data[i][13] = 'نعم';
   }
@@ -376,8 +430,32 @@ function syncImages() {
     if (!have[c]) toAdd.push([c, '', 'نعم', '']);
   });
   if (toAdd.length) ct.getRange(ct.getLastRow()+1,1,toAdd.length,4).setValues(toAdd);
+  applyCategoryValidation_(sh, ct);
 
-  say_('تمت المزامنة ✅\nصور مرتبطة: ' + hitImg + '\nأقسام محددة: ' + hitCat + '\nأقسام جديدة: ' + toAdd.length);
+  say_('تمت المزامنة ✅\nصور مرتبطة: ' + hitImg + '\nأقسام محددة: ' + hitCat + '\nبلا صورة: ' + noImg + '\nبلا قسم: ' + noCat + '\nأقسام جديدة: ' + toAdd.length);
+}
+
+function addCategory_(map, code, category) {
+  if (!code || !category) return;
+  if (!map[code]) map[code] = [];
+  if (map[code].indexOf(category) === -1) map[code].push(category);
+}
+
+/**
+ * قواعد عرض إضافية: يبقى الصنف في قسم السعر، ويظهر أيضاً في القسم
+ * المتخصص حين يدل اسمه عليه. لا تغير هذه القاعدة تصنيف Drive الأصلي.
+ */
+function applyCategoryRules_(categories, itemName) {
+  var isPriceSection = categories.indexOf('ابو 5 ريال') !== -1 || categories.indexOf('ابو 10 ريال') !== -1;
+  if (!isPriceSection) return;
+  var name = String(itemName || '');
+  if (name.indexOf('سلايم') !== -1) addCategoryToList_(categories, 'سلايم وصلصال والعاب تلوين');
+  // «كرتون» ليس كرت تعليق؛ لذلك نستبعده من قاعدة الكروت.
+  if (/كروت|كرت(?!ون)/.test(name)) addCategoryToList_(categories, 'كروت واكياس تعليق');
+}
+
+function addCategoryToList_(categories, category) {
+  if (categories.indexOf(category) === -1) categories.push(category);
 }
 
 function scanFolder_(id, cb) { scanFolderObj_(DriveApp.getFolderById(id), cb); }
@@ -389,7 +467,7 @@ function scanFolderObj_(folder, cb) {
     var mt = f.getMimeType();
     if (mt.indexOf('image/') !== 0) continue;
     var code = codeFromName_(f.getName());
-    if (code) cb(codeKey_(code), f.getId());
+    if (code) cb(codeKey_(code), f.getId(), folder.getName());
   }
   // بعض الأقسام تحتوي مجلدات فرعية؛ نمسحها أيضاً بدلاً من فقد صورها.
   var subfolders = folder.getFolders();
@@ -399,13 +477,32 @@ function scanFolderObj_(folder, cb) {
 /** 800-02122.jpg   |   500-00302 - سيارة كهربائي.jpg   ->  الكود */
 function codeFromName_(name) {
   var base = String(name).replace(/\.[a-zA-Z0-9]+$/, '').trim();
-  // يقبل 800-02122.jpg و800-02122 - لعبة.jpg و800-02122لعبة.jpg.
-  var m = base.match(/^([A-Za-z0-9]+(?:-[A-Za-z0-9]+)*)/);
+  // يقبل الكود في أول الاسم أو وسطه، مع مسافات حول الشرطات أو نص عربي ملاصق.
+  base = base.replace(/\s*-\s*/g, '-');
+  var m = base.match(/(?:^|[^A-Za-z0-9])([A-Za-z0-9]+(?:-[A-Za-z0-9]+)+|\d{3,})(?=$|[^A-Za-z0-9])/);
   return m ? m[1] : '';
 }
 
+/** ينشئ ورقة مراجعة للأصناف التي لا تستطيع المزامنة ربطها. */
+function reportSyncIssues() {
+  var ss = ss_(), sh = ss.getSheetByName(SH_ITEMS);
+  if (!sh || sh.getLastRow() < 2) throw new Error('لا توجد أصناف للمراجعة');
+  var report = ss.getSheetByName('تقرير المزامنة') || ss.insertSheet('تقرير المزامنة');
+  report.clear(); report.setRightToLeft(true);
+  var data = sh.getRange(2,1,sh.getLastRow()-1,ITEM_HEADERS.length).getValues();
+  var out = [['كود الصنف','اسم الصنف','الصورة','القسم','سبب المراجعة']];
+  data.forEach(function(row) {
+    var noImage = !row[11], noCategory = !row[2];
+    if (noImage || noCategory) out.push([row[0],row[1],row[11] ? 'مربوطة' : '',row[2] || '', noImage && noCategory ? 'بلا صورة وبلا قسم' : noImage ? 'بلا صورة' : 'بلا قسم']);
+  });
+  report.getRange(1,1,out.length,out[0].length).setValues(out);
+  report.getRange(1,1,1,out[0].length).setFontWeight('bold').setBackground('#1f3a93').setFontColor('#ffffff');
+  report.setFrozenRows(1); report.autoResizeColumns(1,out[0].length);
+  say_('تم إنشاء تقرير المراجعة: ' + (out.length - 1) + ' صنفاً');
+}
+
 /** مفتاح داخلي للمطابقة فقط؛ لا يغيّر كود الصنف المعروض. */
-function codeKey_(value) { return String(value || '').trim().toUpperCase(); }
+function codeKey_(value) { return restoreItemCode_(value).toUpperCase(); }
 
 /* ================== 4) فتح صلاحية العرض ================== */
 
