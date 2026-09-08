@@ -327,9 +327,10 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 .about{padding:26px 0 40px}.about-card{margin-top:14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:clamp(20px,4vw,42px);box-shadow:var(--shadow);max-width:820px}.about h2{margin:6px 0;color:var(--navy);font-size:28px}.about p{white-space:pre-line;color:var(--muted);max-width:70ch}.eyebrow{color:var(--sky-d);font-weight:800}.trust-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin:22px 0}.trust-grid div{background:var(--sky-soft);border-radius:12px;padding:13px}.trust-grid b,.trust-grid span{display:block}.trust-grid span{color:var(--muted);margin-top:3px}.map-link{display:inline-flex;padding:10px 14px;border-radius:11px;background:var(--navy);color:#fff;text-decoration:none;font-weight:800}
 
 /* ===================== الفوتر ===================== */
-footer{background:var(--navy); color:rgba(255,255,255,.75); padding:28px 0 34px; margin-top:20px; font-size:13px}
-footer .cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:22px}
-footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
+footer{background:linear-gradient(125deg,var(--navy-d),var(--navy));color:rgba(255,255,255,.76);padding:34px 0 22px;margin-top:20px;font-size:13px}
+footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:24px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,.15)}
+footer b{color:#fff;display:block;margin-bottom:7px;font-size:14px}footer span{display:block}
+.footer-about{grid-column:span 2}.footer-about p{margin:0 0 10px;line-height:1.8;max-width:58ch}.footer-about .meta{display:flex;gap:10px;flex-wrap:wrap}.footer-about .meta span{background:rgba(255,255,255,.1);padding:4px 9px;border-radius:7px}.footer-about a{color:#fff;font-weight:800;text-decoration:none}.footer-about a:hover{color:var(--yellow)}.footer-copy{text-align:center;font-size:12px;padding-top:16px;color:rgba(255,255,255,.55)}
 
 /* ===================== الجوال ===================== */
 @media(max-width:700px){
@@ -431,11 +432,13 @@ footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
 
 <footer>
   <div class="wrap cols">
+    <div class="footer-about"><b>من نحن</b><p id="fAbout">—</p><div class="meta"><span id="fCr">السجل التجاري: —</span><span id="fAddress">—</span></div><a id="fMap" class="hidden" target="_blank" rel="noopener">📍 موقعنا على الخريطة</a> · <a href="?about=1">التفاصيل ←</a></div>
     <div><b>الشحن</b><span id="fShip">—</span></div>
     <div><b>طرق الدفع</b><span id="fPay">—</span></div>
     <div><b>تنويه</b><span id="fNote">—</span></div>
     <div><b>تواصل</b><span id="fContact">—</span></div>
   </div>
+  <div class="wrap footer-copy">© <span id="fYear"></span> <span id="fStoreCopy">الطفل المبتسم</span> — جميع الحقوق محفوظة</div>
 </footer>
 
 <a class="wa-float" id="waFloat" href="#" target="_blank" rel="noopener" aria-label="تواصل معنا عبر واتساب" title="تواصل عبر واتساب"><span>واتساب</span><b>◉</b></a>
@@ -643,6 +646,12 @@ function applyConf() {
   document.getElementById('aboutAddress').textContent = g('عنوان_المتجر', '—');
   const map = document.getElementById('aboutMap'), mapUrl = g('رابط_الخريطة', '');
   map.href = mapUrl; map.classList.toggle('hidden', !mapUrl);
+  document.getElementById('fAbout').textContent = g('عن_المتجر', 'نسعد بخدمتكم وتلبية احتياجاتكم من ألعاب الأطفال بالجملة.');
+  document.getElementById('fCr').textContent = 'السجل التجاري: ' + g('السجل_التجاري', '—');
+  document.getElementById('fAddress').textContent = g('عنوان_المتجر', '—');
+  const footerMap = document.getElementById('fMap'); footerMap.href = mapUrl; footerMap.classList.toggle('hidden', !mapUrl);
+  document.getElementById('fYear').textContent = new Date().getFullYear();
+  document.getElementById('fStoreCopy').textContent = g('اسم_المتجر', 'الطفل المبتسم');
 }
 
 function showAbout() { document.getElementById('aboutSection').classList.remove('hidden'); document.getElementById('sections').classList.add('hidden'); document.getElementById('grid').classList.add('hidden'); document.getElementById('state').innerHTML = ''; window.scrollTo({top:0,behavior:'smooth'}); }
