@@ -408,8 +408,9 @@ footer b{color:#fff;display:block;margin-bottom:7px;font-size:14px}footer span{d
     </select>
     <select class="sel" id="fAge"><option value="">كل الأعمار</option></select>
     <select class="sel" id="fBrand"><option value="">كل الماركات</option></select>
-    <select class="sel" id="fType"><option value="">ولد وبنت</option></select>
-       <option value="def">الترتيب الافتراضي</option>
+    <select class="sel" id="fType"><option value="">كل الألعاب</option></select>
+    <select class="sel" id="fSort">
+      <option value="def">الترتيب الافتراضي</option>
       <option value="p-asc">السعر: من الأقل</option>
       <option value="p-desc">السعر: من الأعلى</option>
       <option value="name">الاسم أبجدياً</option>
@@ -592,7 +593,7 @@ async function boot() {
           s02: parseInt(r['فرع02']) || 0, s05: parseInt(r['فرع05']) || 0,
           img: r['معرف الصورة'] || '', offer: yes(r['عرض']), isNew: yes(r['جديد']),
           tags: r['وسوم'] || '', ord: parseFloat(r['ترتيب']) || 9999, note: r['ملاحظة'] || '',
-          age: r['الفئة العمرية'] || '', brand: r['الماركة'] || '', type: r['النوع'] || ''
+          age: r['الفئة العمرية'] || '', brand: r['الماركة'] || '', type: audienceLabel(r['النوع'])
         };
       });
 
@@ -710,6 +711,13 @@ function fillCatSelect() {
   s.innerHTML = h; s.value = f.cat;
 }
 
+function audienceLabel(value) {
+  const v = String(value || '').trim();
+  if (v === 'ولد' || v === 'ألعاب أولاد') return 'ألعاب أولاد';
+  if (v === 'بنت' || v === 'ألعاب بنات') return 'ألعاب بنات';
+  return v;
+}
+
 function fillMetaFilters() {
   const put = (id, key, label) => {
     const values = [...new Set(ITEMS.map(i => i[key]).filter(Boolean))].sort((a,b) => a.localeCompare(b, 'ar'));
@@ -717,7 +725,7 @@ function fillMetaFilters() {
     el.innerHTML = `<option value="">${label}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
     el.value = f[key];
   };
-  put('fAge', 'age', 'كل الأعمار'); put('fBrand', 'brand', 'كل الماركات'); put('fType', 'type', 'ولد وبنت');
+  put('fAge', 'age', 'كل الأعمار'); put('fBrand', 'brand', 'كل الماركات'); put('fType', 'type', 'كل الألعاب');
 }
 
 function setCat(c) {
