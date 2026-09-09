@@ -163,6 +163,8 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
 .prices{display:flex; align-items:baseline; gap:7px; flex-wrap:wrap}
 .p-main{font-size:18px; font-weight:800; color:var(--navy)}
+.p-offer{font-size:20px;font-weight:800;color:var(--red)}
+.p-old{font-size:12px;color:var(--muted);text-decoration:line-through;text-decoration-thickness:1.5px}
 .p-cur{font-size:12px; font-weight:500; color:var(--muted)}
 .p-sub{font-size:11.5px; color:var(--green); background:var(--green-soft); padding:2px 7px; border-radius:6px; font-weight:700}
 .carton{font-size:12px; color:var(--muted)}
@@ -526,7 +528,9 @@ const snapQty = (it, q) => {
 /* أزرار الكميات السريعة */
 /* وحدة العرض وسعرها وكميتها — الأصناف بالكرتون تُعرض بالكرتون لا بالحبة */
 const unitOf  = (it) => ctnOnly(it) ? 'كرتون' : it.unit;
-const priceOf = (it) => ctnOnly(it) ? it.ctn : it.price;
+const basePriceOf = (it) => ctnOnly(it) ? it.ctn : it.price;
+const cartonPriceOf = (it) => it.offerPrice > 0 && it.pcs ? it.offerPrice * it.pcs : it.ctn;
+const priceOf = (it) => ctnOnly(it) ? cartonPriceOf(it) : (it.offerPrice > 0 ? it.offerPrice : it.price);
 const dispQty = (it, q) => ctnOnly(it) ? Math.round(q / it.pcs) : q;   /* حبات -> وحدة العرض */
 const realQty = (it, v) => ctnOnly(it) ? (parseInt(v) || 0) * it.pcs : (parseInt(v) || 0);
 const dispMin = (it) => ctnOnly(it) ? 1 : minQty();
@@ -585,6 +589,8 @@ async function boot() {
         const price = parseFloat(r['سعر الحبة']) || 0;
         const pcs = parseInt(r['عدد الحبات بالكرتون']) || 0;
         const ctn = parseFloat(r['سعر الكرتون']) || (pcs ? price * pcs : 0);
+        const offerPrice = parseFloat(r['سعر العرض']) || 0;
+        const hasOffer = yes(r['عرض']) && offerPrice > 0 && offerPrice < price;
         return {
           code: r['كود الصنف'], name: r['اسم الصنف'], cat: r['القسم'] || 'غير مصنّف',
           unit: r['وحدة البيع'] || 'حبة',
@@ -592,7 +598,7 @@ async function boot() {
           stock: parseInt(r['المخزون']) || 0,
           s01: parseInt(r['الرئيسي']) || 0,
           s02: parseInt(r['فرع02']) || 0, s05: parseInt(r['فرع05']) || 0,
-          img: r['معرف الصورة'] || '', offer: yes(r['عرض']), isNew: yes(r['جديد']),
+          img: r['معرف الصورة'] || '', offer: hasOffer, offerPrice: hasOffer ? offerPrice : 0, isNew: yes(r['جديد']),
           tags: r['وسوم'] || '', ord: parseFloat(r['ترتيب']) || 9999, note: r['ملاحظة'] || '',
           age: r['الفئة العمرية'] || '', brand: r['الماركة'] || '', type: audienceLabel(r['النوع'])
         };
@@ -747,7 +753,7 @@ function filtered(list) {
 
   if (f.price) {
     const [lo, hi] = f.price.split('-').map(Number);
-    a = a.filter(i => i.price >= lo && i.price < hi);
+    a = a.filter(i => priceOf(i) >= lo && priceOf(i) < hi);
   }
   if (f.age) a = a.filter(i => i.age === f.age);
   if (f.brand) a = a.filter(i => i.brand === f.brand);
@@ -760,8 +766,8 @@ function filtered(list) {
 }
 function sortList(a) {
   const s = f.sort;
-  if (s === 'p-asc') a.sort((x, y) => x.price - y.price);
-  else if (s === 'p-desc') a.sort((x, y) => y.price - x.price);
+  if (s === 'p-asc') a.sort((x, y) => priceOf(x) - priceOf(y));
+  else if (s === 'p-desc') a.sort((x, y) => priceOf(y) - priceOf(x));
   else if (s === 'name') a.sort((x, y) => x.name.localeCompare(y.name, 'ar'));
   else if (s === 'code') a.sort((x, y) => x.code.localeCompare(y.code));
   else a.sort((x, y) => (x.ord - y.ord) || (y.offer - x.offer) || (y.isNew - x.isNew));
@@ -919,9 +925,7 @@ function cardHTML(i) {
     <div class="body">
       <div class="code">${esc(i.code)}</div>
       <div class="name js-open">${esc(i.name)}</div>
-      <div class="prices">
-        <span class="p-main">${money(priceOf(i))}</span><span class="p-cur">${cur()} / ${esc(unitOf(i))}</span>
-      </div>
+      <div class="prices">${i.offer ? `<span class="p-old">${money(basePriceOf(i))}</span><span class="p-offer">${money(priceOf(i))}</span>` : `<span class="p-main">${money(priceOf(i))}</span>`}<span class="p-cur">${cur()} / ${esc(unitOf(i))}</span></div>
       ${ctnOnly(i)
         ? `<div class="carton">الكرتون <b>${i.pcs}</b> ${esc(i.unit)}</div>
            <div class="onlyctn">📦 يُباع بالكرتون فقط</div>`
@@ -1140,15 +1144,12 @@ function openItem(code) {
       <div class="minfo">
         <div class="code">${esc(i.code)}</div>
         <h2>${esc(i.name)}</h2>
-        <div class="prices">
-          <span class="p-main" style="font-size:26px">${money(priceOf(i))}</span><span class="p-cur">${cur()} / ${esc(unitOf(i))}</span>
-          <span class="p-sub">سعر الجملة</span>
-        </div>
+        <div class="prices">${i.offer ? `<span class="p-old" style="font-size:16px">${money(basePriceOf(i))}</span><span class="p-offer" style="font-size:28px">${money(priceOf(i))}</span><span class="p-sub">سعر العرض</span>` : `<span class="p-main" style="font-size:26px">${money(priceOf(i))}</span><span class="p-sub">سعر الجملة</span>`}<span class="p-cur">${cur()} / ${esc(unitOf(i))}</span></div>
         <div>
           <div class="spec"><span>القسم</span><b>${esc(i.cat)}</b></div>
           <div class="spec"><span>وحدة البيع</span><b>${esc(i.unit)}</b></div>
           ${i.pcs ? `<div class="spec"><span>عدد الحبات بالكرتون</span><b>${i.pcs}</b></div>
-                     <div class="spec"><span>سعر الكرتون</span><b>${money(i.ctn)} ${cur()}</b></div>` : ''}
+                     <div class="spec"><span>سعر الكرتون</span><b>${money(cartonPriceOf(i))} ${cur()}</b></div>` : ''}
           ${ctnOnly(i) ? `<div class="spec"><span>طريقة البيع</span><b style="color:var(--sky-d)">بالكرتون فقط</b></div>` : ''}
           ${showStock ? `<div class="spec"><span>المتوفر</span><b>${i.stock} ${esc(i.unit)} (الرئيسي ${i.s01} · فرع02 ${i.s02} · فرع05 ${i.s05})</b></div>`
                       : `<div class="spec"><span>الحالة</span><b style="color:${i.stock > 0 ? 'var(--green)' : 'var(--red)'}">${i.stock > 0 ? 'متوفر' : 'غير متوفر حالياً'}</b></div>`}
