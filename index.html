@@ -330,6 +330,7 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 footer{background:linear-gradient(125deg,var(--navy-d),var(--navy));color:rgba(255,255,255,.76);padding:34px 0 22px;margin-top:20px;font-size:13px}
 footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:24px;padding-bottom:24px;border-bottom:1px solid rgba(255,255,255,.15)}
 footer b{color:#fff;display:block;margin-bottom:7px;font-size:14px}footer span{display:block}
+.footer-contact{display:flex;flex-direction:column;gap:5px}.footer-contact a{color:#fff;text-decoration:none}.footer-contact a:hover{color:var(--yellow)}
 .footer-about{grid-column:span 2}.footer-about p{margin:0 0 10px;line-height:1.8;max-width:58ch}.footer-about .meta{display:flex;gap:10px;flex-wrap:wrap}.footer-about .meta span{background:rgba(255,255,255,.1);padding:4px 9px;border-radius:7px}.footer-about a{color:#fff;font-weight:800;text-decoration:none}.footer-about a:hover{color:var(--yellow)}.footer-copy{text-align:center;font-size:12px;padding-top:16px;color:rgba(255,255,255,.55)}
 
 /* ===================== الجوال ===================== */
@@ -436,7 +437,7 @@ footer b{color:#fff;display:block;margin-bottom:7px;font-size:14px}footer span{d
     <div><b>الشحن</b><span id="fShip">—</span></div>
     <div><b>طرق الدفع</b><span id="fPay">—</span></div>
     <div><b>تنويه</b><span id="fNote">—</span></div>
-    <div><b>تواصل</b><span id="fContact">—</span></div>
+    <div class="footer-contact"><b>تواصل</b><span id="fContact">—</span><a href="tel:0568161047">الاتصال: 0568161047</a><a href="mailto:info@mbtsm.com">البريد: info@mbtsm.com</a></div>
   </div>
   <div class="wrap footer-copy">© <span id="fYear"></span> <span id="fStoreCopy">الطفل المبتسم</span> — جميع الحقوق محفوظة</div>
 </footer>
