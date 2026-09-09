@@ -67,7 +67,7 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 .icobtn.burger{font-size:0}
 .burger i{display:block; width:18px; height:2px; border-radius:2px; background:var(--navy); box-shadow:0 -6px 0 var(--navy), 0 6px 0 var(--navy)}
 .brand{display:flex; align-items:center; gap:9px; min-width:0; flex:0 1 auto; text-decoration:none}
-.brand img{height:54px; width:54px; object-fit:contain; flex:0 0 auto}
+.brand img{height:54px;width:54px;object-fit:contain;flex:0 0 auto;border-radius:14px;background:#fff;border:1px solid #D7E9F7;box-shadow:0 4px 12px rgba(19,63,166,.14)}
 .brand .txt{min-width:0}
 .brand h1{font-size:16px; margin:0; font-weight:800; white-space:nowrap; color:var(--navy)}
 .brand small{display:block; font-size:11.5px; color:var(--muted); font-weight:500; margin-top:-4px; white-space:nowrap}
@@ -439,7 +439,7 @@ footer b{color:#fff;display:block;margin-bottom:7px;font-size:14px}footer span{d
     <div><b>الشحن</b><span id="fShip">—</span></div>
     <div><b>طرق الدفع</b><span id="fPay">—</span></div>
     <div><b>تنويه</b><span id="fNote">—</span></div>
-    <div class="footer-contact"><b>تواصل</b><span id="fContact">—</span><a href="tel:0568161047">الاتصال: 0568161047</a><a href="mailto:info@mbtsm.com">البريد: info@mbtsm.com</a></div>
+    <div class="footer-contact"><b>تواصل</b><span id="fContact">—</span><a id="fPhone" href="#">الاتصال: —</a><a id="fEmail" href="#">البريد: —</a></div>
   </div>
   <div class="wrap footer-copy">© <span id="fYear"></span> <span id="fStoreCopy">الطفل المبتسم</span> — جميع الحقوق محفوظة</div>
 </footer>
@@ -645,6 +645,14 @@ function applyConf() {
   const w = (g('رقم_واتساب', WHATSAPP_FALLBACK) || '').replace(/\D/g, '');
   document.getElementById('fContact').innerHTML = w
     ? `واتساب: <a href="https://wa.me/${w}" style="color:#fff">${w}</a>` : '—';
+  const phone = g('رقم_الاتصال', '0568161047'), phoneLink = phone.replace(/\D/g, '');
+  const phoneEl = document.getElementById('fPhone');
+  phoneEl.textContent = phone ? 'الاتصال: ' + phone : 'الاتصال: —';
+  phoneEl.href = phoneLink ? 'tel:' + phoneLink : '#';
+  const email = g('البريد_الإلكتروني', 'info@mbtsm.com');
+  const emailEl = document.getElementById('fEmail');
+  emailEl.textContent = email ? 'البريد: ' + email : 'البريد: —';
+  emailEl.href = email ? 'mailto:' + email : '#';
   const wa = document.getElementById('waFloat');
   wa.href = w ? `https://wa.me/${w}` : '#'; wa.hidden = !w;
   document.getElementById('aboutTitle').textContent = `عن ${g('اسم_المتجر', 'الطفل المبتسم')}`;
