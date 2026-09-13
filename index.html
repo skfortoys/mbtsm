@@ -332,15 +332,65 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 .totop:hover{opacity:1; background:var(--sky)}
 
 /* ===================== الفوتر ===================== */
-footer{background:var(--navy); color:rgba(255,255,255,.75); padding:28px 0 34px; margin-top:20px; font-size:13px}
-footer .cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:22px}
-footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
-footer .storeinfo{margin-top:22px; padding-top:18px; border-top:1px solid rgba(255,255,255,.18);
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:14px 22px; font-size:12.5px}
-footer .storeinfo .about{grid-column:1/-1; color:rgba(255,255,255,.9); line-height:1.75}
-footer .storeinfo i{font-style:normal; color:rgba(255,255,255,.55); display:block; font-size:11.5px; margin-bottom:2px}
-footer .storeinfo a{color:#9FC6FF}
-footer .storeinfo em{font-style:normal; color:#fff}
+/* ───────── تذييل الصفحة ───────── */
+footer{background:linear-gradient(180deg,var(--navy) 0%,var(--navy-d,#0C2E7A) 100%);
+  color:rgba(255,255,255,.72); margin-top:34px; font-size:13.5px; line-height:1.85}
+/* padding-block فقط — الاختصار padding يمسح حشوة .wrap الجانبية */
+footer .fgrid{display:grid; gap:30px 34px; padding-block:44px 34px;
+  grid-template-columns:1.6fr 1fr 1fr 1fr}
+footer .fh{color:#fff; font-size:14.5px; font-weight:800; margin:0 0 15px; position:relative; padding-bottom:10px}
+footer .fh::after{content:''; position:absolute; bottom:0; inset-inline-start:0;
+  width:32px; height:3px; border-radius:2px; background:var(--yellow,#FFC107)}
+footer ul{list-style:none; margin:0; padding:0}
+footer li{margin-bottom:11px; display:flex; gap:9px; align-items:flex-start}
+footer li .i{flex:none; width:19px; text-align:center; opacity:.75; font-size:14px; line-height:1.6}
+footer li .t{min-width:0}
+footer li .t em{font-style:normal; display:block; color:rgba(255,255,255,.5);
+  font-size:11.5px; letter-spacing:.2px; margin-bottom:1px}
+footer li .t span,footer li .t a{color:rgba(255,255,255,.92); word-break:break-word}
+footer a{color:rgba(255,255,255,.92); text-decoration:none; transition:color .15s}
+footer a:hover{color:var(--yellow,#FFC107)}
+
+footer .fbrand .lg{display:flex; align-items:center; gap:12px; margin-bottom:15px}
+footer .fbrand .lg img{width:60px; height:60px; object-fit:contain; border-radius:16px;
+  background:#fff; padding:4px; box-shadow:0 6px 18px -4px rgba(0,0,0,.45)}
+footer .fbrand .lg b{display:block; color:#fff; font-size:17px; font-weight:800; line-height:1.3}
+footer .fbrand .lg span{display:block; font-size:12.5px; color:rgba(255,255,255,.6)}
+footer .fabout{margin:0 0 18px; color:rgba(255,255,255,.78); max-width:44ch}
+footer .fwa{display:inline-flex; align-items:center; gap:8px; background:#25D366; color:#06301A;
+  font-weight:800; font-size:13.5px; border-radius:11px; padding:10px 17px;
+  box-shadow:0 5px 16px -5px rgba(37,211,102,.75); transition:.18s}
+footer .fwa:hover{background:#1FBE5A; color:#06301A; transform:translateY(-1px)}
+
+footer .fcats{display:flex; flex-direction:column; gap:2px}
+footer .fcats button{background:none; border:0; padding:5px 0; font-family:inherit; font-size:13.5px;
+  color:rgba(255,255,255,.88); cursor:pointer; text-align:start; display:flex; align-items:center;
+  gap:8px; transition:.15s; width:100%}
+footer .fcats button::before{content:'‹'; color:var(--yellow,#FFC107); font-size:16px;
+  line-height:1; transition:transform .15s}
+footer .fcats button:hover{color:var(--yellow,#FFC107)}
+footer .fcats button:hover::before{transform:translateX(3px)}
+footer .fcats .n{margin-inline-start:auto; font-size:11.5px; color:rgba(255,255,255,.42)}
+@media (max-width:560px){ footer .fcats{display:grid; grid-template-columns:1fr 1fr; gap:2px 14px} }
+
+footer .fbar{border-top:1px solid rgba(255,255,255,.14); background:rgba(0,0,0,.16)}
+footer .fbar .wrap{display:flex; flex-wrap:wrap; gap:8px 22px; align-items:center;
+  padding-block:16px; padding-inline-end:64px;   /* مساحة لزر «أعلى الصفحة» العائم */
+  font-size:12.5px; color:rgba(255,255,255,.6)}
+footer .fbar .sep{flex:1 1 auto}
+footer .fbar .lic{display:flex; flex-wrap:wrap; gap:6px 16px}
+footer .fbar .lic span{display:inline-flex; gap:6px; align-items:center}
+footer .fbar .lic b{color:rgba(255,255,255,.88); font-weight:700}
+footer .fbar .note{color:rgba(255,255,255,.5)}
+
+@media (max-width:900px){
+  footer .fgrid{grid-template-columns:1fr 1fr; gap:26px}
+  footer .fbrand{grid-column:1/-1}
+}
+@media (max-width:560px){
+  footer .fgrid{grid-template-columns:1fr; gap:26px; padding-block:32px 26px}
+  footer .fbar .wrap{flex-direction:column; align-items:flex-start; gap:9px}
+}
 
 /* ===================== الجوال ===================== */
 @media(max-width:700px){
@@ -434,13 +484,27 @@ footer .storeinfo em{font-style:normal; color:#fff}
 </main>
 
 <footer>
-  <div class="wrap cols">
-    <div><b>الشحن</b><span id="fShip">—</span></div>
-    <div><b>طرق الدفع</b><span id="fPay">—</span></div>
-    <div><b>تنويه</b><span id="fNote">—</span></div>
-    <div><b>تواصل</b><span id="fContact">—</span></div>
+  <div class="wrap fgrid">
+    <div class="fcol fbrand">
+      <div class="lg">
+        <img id="fLogo" src="" alt="">
+        <div><b id="fName">الطفل المبتسم</b><span id="fDesc"></span></div>
+      </div>
+      <p class="fabout" id="fAbout"></p>
+      <a class="fwa" id="fWa" target="_blank" rel="noopener" hidden>
+        <span style="font-size:17px">🟢</span> اطلب عبر واتساب
+      </a>
+    </div>
+    <div class="fcol"><h3 class="fh">تواصل معنا</h3><ul id="fContactList"></ul></div>
+    <div class="fcol"><h3 class="fh">الشحن والدفع</h3><ul id="fServiceList"></ul></div>
+    <div class="fcol"><h3 class="fh">تسوّق حسب القسم</h3><div class="fcats" id="fCats"></div></div>
   </div>
-  <div class="wrap storeinfo" id="storeInfo"></div>
+  <div class="fbar"><div class="wrap">
+    <span id="fCopy"></span>
+    <div class="lic" id="fLic"></div>
+    <span class="sep"></span>
+    <span class="note" id="fNoteBar"></span>
+  </div></div>
 </footer>
 
 <button class="totop" id="toTop" title="أعلى الصفحة">▲</button>
@@ -697,13 +761,7 @@ function applyConf() {
     document.getElementById('bannerTitle').textContent = g('بانر_العروض', '');
     document.getElementById('bannerSub').textContent = g('رسالة_ترحيب', '');
   }
-  document.getElementById('fShip').textContent = g('نص_الشحن', '—');
-  document.getElementById('fPay').textContent = g('نص_الدفع', '—');
-  document.getElementById('fNote').textContent = g('تنويه_الاسعار', '—');
-  const w = (g('رقم_واتساب', WHATSAPP_FALLBACK) || '').replace(/\D/g, '');
-  document.getElementById('fContact').innerHTML = w
-    ? `واتساب: <a href="https://wa.me/${w}" style="color:#fff">${w}</a>` : '—';
-  renderStoreInfo();
+  renderFooter();
 }
 
 /* ---------- معلومات المؤسسة — كلها من صفحة الاعدادات ---------- */
@@ -735,15 +793,71 @@ function infoRows() {
   return out;
 }
 
-function renderStoreInfo() {
-  const box = document.getElementById('storeInfo');
-  if (!box) return;
-  const about = (CONF['عن_المتجر'] || '').trim();
-  const rows = infoRows();
-  if (!about && !rows.length) { box.innerHTML = ''; return; }
-  box.innerHTML =
-    (about ? `<div class="about">${esc(about)}</div>` : '') +
-    rows.map(r => `<div><i>${esc(r.label)}</i><em>${r.val}</em></div>`).join('');
+function renderFooter() {
+  const g = (k, d) => (CONF[k] || d || '').trim();
+  const wa = (g('رقم_واتساب', WHATSAPP_FALLBACK) || '').replace(/\D/g, '');
+
+  /* ① بطاقة المؤسسة */
+  const lg = document.getElementById('fLogo');
+  const hdr = document.getElementById('logoImg');
+  if (lg && hdr) { lg.src = hdr.src; lg.alt = g('اسم_المتجر', 'الطفل المبتسم'); }
+  document.getElementById('fName').textContent = g('اسم_المتجر', 'الطفل المبتسم');
+  document.getElementById('fDesc').textContent = g('وصف_المتجر', '');
+  const ab = document.getElementById('fAbout');
+  ab.textContent = g('عن_المتجر', '');
+  ab.hidden = !g('عن_المتجر', '');
+  const wb = document.getElementById('fWa');
+  if (wa) { wb.href = 'https://wa.me/' + wa; wb.hidden = false; } else wb.hidden = true;
+
+  /* ② تواصل معنا */
+  const li = (icon, label, val) =>
+    `<li><span class="i">${icon}</span><span class="t"><em>${esc(label)}</em>${val}</span></li>`;
+  const C = [];
+  if (wa) C.push(li('💬', 'واتساب',
+    `<a href="https://wa.me/${wa}" target="_blank" rel="noopener" dir="ltr">${wa}</a>`));
+  const tel = g('رقم_الاتصال', '');
+  if (tel) C.push(li('📞', 'الهاتف',
+    `<a href="tel:${esc(tel.replace(/[^0-9+]/g, ''))}" dir="ltr">${esc(tel)}</a>`));
+  const mail = g('البريد_الإلكتروني', '');
+  if (mail) C.push(li('✉️', 'البريد الإلكتروني',
+    `<a href="mailto:${esc(mail)}" dir="ltr">${esc(mail)}</a>`));
+  const addr = g('عنوان_المتجر', ''), map = g('رابط_الخريطة', '');
+  if (addr || map) C.push(li('📍', 'العنوان',
+    `<span>${esc(addr)}</span>` + (map ?
+      ` <a href="${esc(map)}" target="_blank" rel="noopener">— الخريطة ↗</a>` : '')));
+  document.getElementById('fContactList').innerHTML = C.join('') ||
+    '<li><span class="t"><span>—</span></span></li>';
+
+  /* ③ الشحن والدفع وأوقات الدوام */
+  const S = [];
+  if (g('نص_الشحن', '')) S.push(li('🚚', 'الشحن', `<span>${esc(g('نص_الشحن', ''))}</span>`));
+  if (g('نص_الدفع', '')) S.push(li('💳', 'طرق الدفع', `<span>${esc(g('نص_الدفع', ''))}</span>`));
+  if (g('ساعات_العمل', '')) S.push(li('🕒', 'أوقات الدوام', `<span>${esc(g('ساعات_العمل', ''))}</span>`));
+  if (g('اقل_كمية_للصنف', '')) S.push(li('📦', 'أقل كمية للطلب',
+    `<span>${esc(g('اقل_كمية_للصنف', ''))} لكل صنف</span>`));
+  document.getElementById('fServiceList').innerHTML = S.join('') ||
+    '<li><span class="t"><span>—</span></span></li>';
+
+  /* ④ أقسام سريعة */
+  const box = document.getElementById('fCats');
+  const top = CATS.filter(c => catCount(c.name)).slice(0, 8);
+  box.innerHTML = top.map(c =>
+    `<button data-c="${esc(c.name)}">${c.icon || ''} ${esc(c.name)}` +
+    `<span class="n">${catCount(c.name)}</span></button>`).join('') +
+    `<button data-c="">كل الأصناف<span class="n">${ITEMS.length}</span></button>`;
+  box.querySelectorAll('button').forEach(b => b.onclick = () => {
+    setCat(b.dataset.c);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  /* ⑤ الشريط السفلي */
+  document.getElementById('fCopy').innerHTML =
+    `© ${new Date().getFullYear()} ${esc(g('اسم_المتجر', 'الطفل المبتسم'))}`;
+  const L = [];
+  if (g('السجل_التجاري', '')) L.push(`<span>السجل التجاري <b>${esc(g('السجل_التجاري', ''))}</b></span>`);
+  if (g('الرقم_الضريبي', '')) L.push(`<span>الرقم الضريبي <b>${esc(g('الرقم_الضريبي', ''))}</b></span>`);
+  document.getElementById('fLic').innerHTML = L.join('');
+  document.getElementById('fNoteBar').textContent = g('تنويه_الاسعار', '');
 }
 
 function openInfo() {
