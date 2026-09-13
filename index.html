@@ -161,6 +161,9 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 .code{font-size:11.5px; color:var(--muted); font-family:ui-monospace,monospace; letter-spacing:.3px}
 .name{font-size:14px; font-weight:500; line-height:1.45; min-height:40px; cursor:pointer;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.p-was{font-size:13px;color:var(--muted);text-decoration:line-through;margin-inline-start:6px}
+.p-off{display:inline-block;background:#D92D20;color:#fff;font-size:11px;font-weight:700;
+       border-radius:6px;padding:2px 6px;margin-inline-start:6px;vertical-align:middle}
 .prices{display:flex; align-items:baseline; gap:7px; flex-wrap:wrap}
 .p-main{font-size:18px; font-weight:800; color:var(--navy)}
 .p-cur{font-size:12px; font-weight:500; color:var(--muted)}
@@ -453,7 +456,15 @@ footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
 /* ==================================================================
    ①  الإعدادات — عدّل هنا فقط
    ================================================================== */
+/* مصدران منفصلان:
+   ① items.json — بجوار الموقع. الأصناف والأسعار. يولّده catalog_build.py على الجهاز.
+      لا يحتوي أي رصيد ولا تفصيل مخازن — فلا تخرج بيانات المؤسسة الحساسة أبداً.
+   ② شيت التحكم — قرارات العرض التي يعدّلها صاحب المتجر من جواله:
+      القسم · الصورة · جديد · عرض · سعر العرض · الترتيب · إظهار · وسوم.
+   لو تعطّل ② تُعرض الأصناف والأسعار كاملة بدون علامات العرض — الموقع لا يتوقف. */
+const ITEMS_URL = 'items.json';
 const SHEET_ID = '14uP8Lv69Gw6r8qg5CwH1Jimox-U21XuHdJ6AMwRq4to';
+const SH_CTRL  = 'التحكم';
 const WHATSAPP_FALLBACK = '966557292842';   // يُقرأ من صفحة الاعدادات، وهذا احتياطي
 const VAT_FALLBACK = 15;                    // نسبة الضريبة % — تُقرأ من الاعدادات (نسبة_الضريبة)
 const MIN_QTY_FALLBACK = 3;                 // أقل كمية للصنف — تُقرأ من الاعدادات (اقل_كمية_للصنف)
@@ -512,6 +523,11 @@ const priceOf = (it) => ctnOnly(it) ? it.ctn : it.price;
 const dispQty = (it, q) => ctnOnly(it) ? Math.round(q / it.pcs) : q;   /* حبات -> وحدة العرض */
 const realQty = (it, v) => ctnOnly(it) ? (parseInt(v) || 0) * it.pcs : (parseInt(v) || 0);
 const dispMin = (it) => ctnOnly(it) ? 1 : minQty();
+/* سعر ما قبل التخفيض بنفس وحدة العرض، ونسبة الخصم */
+const wasOf  = (it) => !it.was ? 0 : (ctnOnly(it) ? it.was * it.pcs : it.was);
+const offPct = (it) => !it.was ? 0 : Math.round((1 - it.price / it.was) * 100);
+const saleTag = (it) => it.was
+  ? `<span class="p-was">${money(wasOf(it))}</span><span class="p-off">-${offPct(it)}%</span>` : '';
 /* أزرار الكميات السريعة */
 const quickBtns = (it) => {
   if (ctnOnly(it)) {
@@ -552,6 +568,24 @@ async function fetchSheet(name) {
   return toObjects(parseCSV(await r.text()));
 }
 
+/* الأصناف والأسعار — ملف بجوار الموقع، طلب واحد سريع */
+async function fetchItems() {
+  const r = await fetch(ITEMS_URL + '?_=' + Date.now());
+  if (!r.ok) throw new Error('items.json ' + r.status);
+  const d = await r.json();
+  const a = Array.isArray(d) ? d : (d.items || []);
+  GEN = (d && d.generated) || '';
+  return a.map(x => ({
+    code: String(x.c || '').trim(),
+    name: String(x.n || '').trim(),
+    unit: String(x.u || 'حبة').trim(),
+    price: parseFloat(x.p) || 0,
+    pcs: parseInt(x.k) || 0,
+    inStock: String(x.s) !== '0'
+  })).filter(x => x.code && x.name);
+}
+let GEN = '';
+
 /* ---------- التحميل ---------- */
 async function boot() {
   document.getElementById('state').innerHTML = '';
@@ -559,30 +593,51 @@ async function boot() {
     Array.from({ length: 10 }, () => '<div class="skel"><div class="a"></div><div class="b"></div><div class="b" style="width:60%"></div></div>').join('');
 
   try {
-    const [items, cats, conf] = await Promise.all([
-      fetchSheet('الاصناف'), fetchSheet('الاقسام').catch(() => []), fetchSheet('الاعدادات').catch(() => [])
+    /* items.json إلزامي — الباقي تحسينات، وفشلها لا يوقف الموقع */
+    const [base, ctrl, cats, conf] = await Promise.all([
+      fetchItems(),
+      fetchSheet(SH_CTRL).catch(() => []),
+      fetchSheet('الاقسام').catch(() => []),
+      fetchSheet('الاعدادات').catch(() => [])
     ]);
 
     conf.forEach(r => { if (r['المفتاح']) CONF[r['المفتاح']] = r['القيمة']; });
 
-    ITEMS = items.filter(r => r['كود الصنف'] && r['اسم الصنف'] && !(String(r['إظهار']).trim() === 'لا'))
-      .map(r => {
-        const price = parseFloat(r['سعر الحبة']) || 0;
-        const pcs = parseInt(r['عدد الحبات بالكرتون']) || 0;
-        const ctn = parseFloat(r['سعر الكرتون']) || (pcs ? price * pcs : 0);
-        return {
-          code: r['كود الصنف'], name: r['اسم الصنف'], cat: r['القسم'] || 'غير مصنّف',
-          unit: r['وحدة البيع'] || 'حبة',
-          price, pcs, ctn,
-          stock: parseInt(r['المخزون']) || 0,
-          s01: parseInt(r['الرئيسي']) || 0,
-          s02: parseInt(r['فرع02']) || 0, s05: parseInt(r['فرع05']) || 0,
-          img: r['معرف الصورة'] || '', offer: yes(r['عرض']), isNew: yes(r['جديد']),
-          tags: r['وسوم'] || '', ord: parseFloat(r['ترتيب']) || 9999, note: r['ملاحظة'] || ''
-        };
-      });
+    /* فهرس قرارات العرض بالكود */
+    const C = {};
+    ctrl.forEach(r => {
+      const k = String(r['كود الصنف'] || '').trim();
+      if (k) C[k] = r;
+    });
+    /* هل وصل شيت التحكم؟ لو لا، فلا صور ولا أقسام — نعرض الأصناف بأسعارها
+       بصورة مبدئية بدل أن تُفرَّغ الصفحة تماماً. */
+    const ctrlOK = Object.keys(C).length > 0;
 
-    if (!yes(CONF['اظهار_الاصناف_بلا_صورة'])) ITEMS = ITEMS.filter(i => i.img);
+    ITEMS = base.map(b => {
+      const r = C[b.code] || {};
+      const sale = parseFloat(r['سعر العرض']) || 0;         // سعر التخفيض للحبة
+      const price = (sale > 0 && sale < b.price) ? sale : b.price;
+      const was = (sale > 0 && sale < b.price) ? b.price : 0;   // السعر قبل التخفيض
+      return {
+        code: b.code, name: b.name, unit: b.unit, pcs: b.pcs,
+        price, was,
+        ctn: b.pcs ? price * b.pcs : 0,
+        inStock: b.inStock,
+        cat: (r['القسم'] || '').trim() || 'غير مصنّف',
+        img: (r['معرف الصورة'] || '').trim(),
+        offer: yes(r['عرض']) || was > 0,
+        isNew: yes(r['جديد']),
+        tags: r['وسوم'] || '',
+        ord: parseFloat(r['الترتيب']) || 9999,
+        note: r['ملاحظة'] || '',
+        show: String(r['إظهار'] || '').trim() !== 'لا'
+      };
+    });
+
+    /* «إظهار = لا» يخفي فوراً هنا، ويُحذف الصنف من items.json في البناء القادم */
+    ITEMS = ITEMS.filter(i => i.show);
+    if (ctrlOK && !yes(CONF['اظهار_الاصناف_بلا_صورة'])) ITEMS = ITEMS.filter(i => i.img);
+    if (!ctrlOK) console.warn('شيت التحكم لم يُقرأ — عرض بدون أقسام ولا صور ولا علامات عرض');
     // الأصناف التي لا شدّ كرتون لها لا تُعرض (تُفعَّل بالمفتاح: اظهار_الاصناف_بلا_كرتون = نعم)
     if (!yes(CONF['اظهار_الاصناف_بلا_كرتون'])) ITEMS = ITEMS.filter(i => i.pcs > 0);
 
@@ -601,8 +656,8 @@ async function boot() {
     document.getElementById('grid').innerHTML = '';
     document.getElementById('state').innerHTML =
       `<div class="state"><div class="em">🔌</div><b>ما قدرت أقرأ بيانات الأصناف</b>
-       تأكد أن ملف جوجل شيت مشارك «أي شخص لديه الرابط — مُطّلع»<br>
-       وأن أسماء الصفحات: <code>الاصناف</code> و <code>الاقسام</code> و <code>الاعدادات</code>
+       تأكد أن ملف <code>items.json</code> مرفوع بجوار الموقع<br>
+       (يولّده <code>catalog_build.py</code> مع كل تصدير يومي)
        <div style="margin-top:14px"><button class="pill" onclick="boot()">إعادة المحاولة</button></div></div>`;
   }
 }
@@ -858,7 +913,7 @@ function cardHTML(i) {
       <div class="tags">
         ${i.offer ? '<span class="tag">عرض</span>' : ''}
         ${i.isNew ? '<span class="tag new">جديد</span>' : ''}
-        ${i.stock <= 0 ? '<span class="tag out">غير متوفر</span>' : ''}
+        ${!i.inStock ? '<span class="tag out">غير متوفر</span>' : ''}
       </div>
       <button class="fav ${favs.includes(i.code) ? 'on' : ''} js-fav">${favs.includes(i.code) ? '♥' : '♡'}</button>
     </div>
@@ -866,7 +921,7 @@ function cardHTML(i) {
       <div class="code">${esc(i.code)}</div>
       <div class="name js-open">${esc(i.name)}</div>
       <div class="prices">
-        <span class="p-main">${money(priceOf(i))}</span><span class="p-cur">${cur()} / ${esc(unitOf(i))}</span>
+        <span class="p-main">${money(priceOf(i))}</span><span class="p-cur">${cur()} / ${esc(unitOf(i))}</span>${saleTag(i)}
       </div>
       ${ctnOnly(i)
         ? `<div class="onlyctn">📦 وحدة البيع: كرتون</div>`
@@ -1077,7 +1132,7 @@ function sendWhatsApp() {
 /* ---------- نافذة الصنف ---------- */
 function openItem(code) {
   const i = ITEMS.find(x => x.code === code); if (!i) return;
-  const showStock = yes(CONF['اظهار_المخزون']);
+  /* لم تبقَ أرقام أرصدة تُعرض — items.json فيه متوفر/غير متوفر فقط */
   document.getElementById('mbox').innerHTML = `
     <button class="mclose" onclick="closeModal()">✕</button>
     <div class="mgrid">
@@ -1086,7 +1141,7 @@ function openItem(code) {
         <div class="code">${esc(i.code)}</div>
         <h2>${esc(i.name)}</h2>
         <div class="prices">
-          <span class="p-main" style="font-size:26px">${money(priceOf(i))}</span><span class="p-cur">${cur()} / ${esc(unitOf(i))}</span>
+          <span class="p-main" style="font-size:26px">${money(priceOf(i))}</span><span class="p-cur">${cur()} / ${esc(unitOf(i))}</span>${saleTag(i)}
           <span class="p-sub">سعر الجملة</span>
         </div>
         <div>
@@ -1095,8 +1150,7 @@ function openItem(code) {
           ${i.pcs ? `<div class="spec"><span>عدد الحبات بالكرتون</span><b>${i.pcs}</b></div>` : ''}
           ${(i.pcs && !ctnOnly(i)) ? `<div class="spec"><span>سعر الكرتون</span><b>${money(i.ctn)} ${cur()}</b></div>` : ''}
           ${ctnOnly(i) ? `<div class="spec"><span>طريقة البيع</span><b style="color:var(--sky-d)">بالكرتون فقط</b></div>` : ''}
-          ${showStock ? `<div class="spec"><span>المتوفر</span><b>${i.stock} ${esc(i.unit)} (الرئيسي ${i.s01} · فرع02 ${i.s02} · فرع05 ${i.s05})</b></div>`
-                      : `<div class="spec"><span>الحالة</span><b style="color:${i.stock > 0 ? 'var(--green)' : 'var(--red)'}">${i.stock > 0 ? 'متوفر' : 'غير متوفر حالياً'}</b></div>`}
+          <div class="spec"><span>الحالة</span><b style="color:${i.inStock ? 'var(--green)' : 'var(--red)'}">${i.inStock ? 'متوفر' : 'غير متوفر حالياً'}</b></div>
           ${i.note ? `<div class="spec"><span>ملاحظة</span><b>${esc(i.note)}</b></div>` : ''}
         </div>
         <div class="qbtns${ctnOnly(i) ? ' ctn2' : ''}">
