@@ -67,7 +67,9 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 .icobtn.burger{font-size:0}
 .burger i{display:block; width:18px; height:2px; border-radius:2px; background:var(--navy); box-shadow:0 -6px 0 var(--navy), 0 6px 0 var(--navy)}
 .brand{display:flex; align-items:center; gap:9px; min-width:0; flex:0 1 auto; text-decoration:none}
-.brand img{height:54px; width:54px; object-fit:contain; flex:0 0 auto}
+.brand img{height:54px; width:54px; object-fit:contain; flex:0 0 auto;
+  border-radius:15px; background:#fff; padding:3px;
+  box-shadow:0 5px 14px -3px rgba(18,63,166,.45), 0 1px 3px rgba(18,63,166,.18)}
 .brand .txt{min-width:0}
 .brand h1{font-size:16px; margin:0; font-weight:800; white-space:nowrap; color:var(--navy)}
 .brand small{display:block; font-size:11.5px; color:var(--muted); font-weight:500; margin-top:-4px; white-space:nowrap}
@@ -85,6 +87,9 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
   border-radius:10px; background:var(--red); color:#fff; font-size:11px; font-weight:800;
   display:grid; place-items:center; padding:0 5px; border:2px solid #fff;
 }
+.icobtn.info{border-radius:50%; font-weight:900; font-family:Georgia,serif; font-size:19px;
+  color:var(--navy); background:#fff; box-shadow:inset 0 0 0 2px var(--navy)}
+.icobtn.info:hover{background:var(--navy); color:#fff}
 .icobtn.cart{background:var(--navy); color:#fff}
 .icobtn.cart:hover{background:var(--navy-d)}
 
@@ -330,6 +335,12 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 footer{background:var(--navy); color:rgba(255,255,255,.75); padding:28px 0 34px; margin-top:20px; font-size:13px}
 footer .cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:22px}
 footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
+footer .storeinfo{margin-top:22px; padding-top:18px; border-top:1px solid rgba(255,255,255,.18);
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:14px 22px; font-size:12.5px}
+footer .storeinfo .about{grid-column:1/-1; color:rgba(255,255,255,.9); line-height:1.75}
+footer .storeinfo i{font-style:normal; color:rgba(255,255,255,.55); display:block; font-size:11.5px; margin-bottom:2px}
+footer .storeinfo a{color:#9FC6FF}
+footer .storeinfo em{font-style:normal; color:#fff}
 
 /* ===================== الجوال ===================== */
 @media(max-width:700px){
@@ -338,7 +349,7 @@ footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
   #btnFav{margin-inline-start:auto}
   .brand{flex:0 1 auto; min-width:0}
   .brand h1{overflow:hidden; text-overflow:ellipsis}
-  .brand img{height:46px; width:46px}
+  .brand img{height:46px; width:46px; border-radius:13px; box-shadow:0 4px 11px -3px rgba(18,63,166,.45)}
   .brand h1{font-size:14.5px}
   .brand small{display:none}
   .search{order:5; flex:1 1 100%; min-width:0}
@@ -381,6 +392,7 @@ footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
       <input id="q" type="search" placeholder="ابحث بالاسم أو كود الصنف…" autocomplete="off">
     </div>
     <button class="icobtn" id="btnFav" title="المفضلة">♡<span class="badge hidden" id="favBadge">0</span></button>
+    <button class="icobtn info" id="btnInfo" title="معلومات المؤسسة" aria-label="معلومات المؤسسة">!</button>
     <button class="icobtn cart" id="btnCart" title="سلة الطلب">🛒<span class="badge hidden" id="cartBadge">0</span></button>
   </div>
   <div class="catbar"><div class="row" id="cats"></div></div>
@@ -394,6 +406,7 @@ footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
 
   <div class="toolbar">
     <select class="sel" id="fCatSel"><option value="">كل الأقسام</option></select>
+    <select class="sel" id="fAge"><option value="">بنات وأولاد</option></select>
     <select class="sel" id="fPrice">
       <option value="">كل الأسعار</option>
       <option value="0-5">أقل من 5</option>
@@ -427,6 +440,7 @@ footer b{color:#fff; display:block; margin-bottom:7px; font-size:14px}
     <div><b>تنويه</b><span id="fNote">—</span></div>
     <div><b>تواصل</b><span id="fContact">—</span></div>
   </div>
+  <div class="wrap storeinfo" id="storeInfo"></div>
 </footer>
 
 <button class="totop" id="toTop" title="أعلى الصفحة">▲</button>
@@ -487,7 +501,8 @@ const onImgErr = (el, id) => {
 let ITEMS = [], CATS = [], CONF = {};
 let cart = load('smiling_cart', {});
 let favs = load('smiling_favs', []);
-let f = { cat: '', price: '', sort: 'def', q: '', list: false };
+let AGES = [];
+let f = { cat: '', price: '', age: '', sort: 'def', q: '', list: false };
 
 function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }
 function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -523,6 +538,12 @@ const priceOf = (it) => ctnOnly(it) ? it.ctn : it.price;
 const dispQty = (it, q) => ctnOnly(it) ? Math.round(q / it.pcs) : q;   /* حبات -> وحدة العرض */
 const realQty = (it, v) => ctnOnly(it) ? (parseInt(v) || 0) * it.pcs : (parseInt(v) || 0);
 const dispMin = (it) => ctnOnly(it) ? 1 : minQty();
+/* الصنف قد ينتمي لأكثر من قسم — تُكتب في الشيت مفصولة بفاصلة أو شرطة رأسية
+   مثال: «ابو 10 ريال، سلايم وصلصال والعاب تلوين» */
+const splitCats = v => String(v == null ? '' : v)
+  .split(/[,،|\/\n؛;]+/).map(x => x.trim()).filter(Boolean);
+const hasCat  = (i, c) => i.cats.indexOf(c) > -1;
+const catsTxt = i => i.cats.length ? i.cats.join(' · ') : 'غير مصنّف';
 /* سعر ما قبل التخفيض بنفس وحدة العرض، ونسبة الخصم */
 const wasOf  = (it) => !it.was ? 0 : (ctnOnly(it) ? it.was * it.pcs : it.was);
 const offPct = (it) => !it.was ? 0 : Math.round((1 - it.price / it.was) * 100);
@@ -623,7 +644,8 @@ async function boot() {
         price, was,
         ctn: b.pcs ? price * b.pcs : 0,
         inStock: b.inStock,
-        cat: (r['القسم'] || '').trim() || 'غير مصنّف',
+        cats: splitCats(r['القسم']),
+        age: (r['الفئة العمرية'] || '').trim(),
         img: (r['معرف الصورة'] || '').trim(),
         offer: yes(r['عرض']) || was > 0,
         isNew: yes(r['جديد']),
@@ -641,17 +663,20 @@ async function boot() {
     // الأصناف التي لا شدّ كرتون لها لا تُعرض (تُفعَّل بالمفتاح: اظهار_الاصناف_بلا_كرتون = نعم)
     if (!yes(CONF['اظهار_الاصناف_بلا_كرتون'])) ITEMS = ITEMS.filter(i => i.pcs > 0);
 
+    AGES = [...new Set(ITEMS.map(i => i.age).filter(Boolean))].sort((a,b) => a.localeCompare(b,'ar'));
     CATS = cats.filter(c => c['اسم القسم'] && String(c['إظهار']).trim() !== 'لا')
       .map(c => ({ name: c['اسم القسم'], ord: parseFloat(c['الترتيب']) || 999, icon: c['أيقونة'] || '' }))
       .sort((a, b) => a.ord - b.ord);
     if (!CATS.length) {
-      CATS = [...new Set(ITEMS.map(i => i.cat))].sort().map(n => ({ name: n, icon: '' }));
+      CATS = [...new Set([].concat(...ITEMS.map(i => i.cats)))]
+        .sort((a,b) => a.localeCompare(b,'ar')).map(n => ({ name: n, icon: '' }));
     }
     // أقسام موجودة في الأصناف ولم تُذكر في صفحة الاقسام
     const known = new Set(CATS.map(c => c.name));
-    [...new Set(ITEMS.map(i => i.cat))].forEach(n => { if (!known.has(n)) CATS.push({ name: n, ord: 999, icon: '' }); });
+    [...new Set([].concat(...ITEMS.map(i => i.cats)))]
+      .forEach(n => { if (!known.has(n)) CATS.push({ name: n, ord: 999, icon: '' }); });
 
-    applyConf(); renderCats(); renderNav(); fillCatSelect(); render(); deepLink();
+    applyConf(); renderCats(); renderNav(); fillCatSelect(); fillAgeSelect(); render(); deepLink();
   } catch (e) {
     document.getElementById('grid').innerHTML = '';
     document.getElementById('state').innerHTML =
@@ -678,10 +703,69 @@ function applyConf() {
   const w = (g('رقم_واتساب', WHATSAPP_FALLBACK) || '').replace(/\D/g, '');
   document.getElementById('fContact').innerHTML = w
     ? `واتساب: <a href="https://wa.me/${w}" style="color:#fff">${w}</a>` : '—';
+  renderStoreInfo();
+}
+
+/* ---------- معلومات المؤسسة — كلها من صفحة الاعدادات ---------- */
+const INFO_KEYS = [
+  ['عنوان_المتجر',      'العنوان'],
+  ['السجل_التجاري',     'السجل التجاري'],
+  ['الرقم_الضريبي',     'الرقم الضريبي'],
+  ['رقم_الاتصال',       'الهاتف'],
+  ['البريد_الإلكتروني', 'البريد الإلكتروني'],
+  ['ساعات_العمل',       'أوقات الدوام'],
+];
+
+function infoRows() {
+  const out = [];
+  INFO_KEYS.forEach(([k, label]) => {
+    const v = (CONF[k] || '').trim();
+    if (!v) return;
+    let val = esc(v);
+    if (k === 'البريد_الإلكتروني') val = `<a href="mailto:${esc(v)}">${esc(v)}</a>`;
+    if (k === 'رقم_الاتصال')       val = `<a href="tel:${esc(v.replace(/[^0-9+]/g,''))}" dir="ltr">${esc(v)}</a>`;
+    out.push({ label, val });
+  });
+  const map = (CONF['رابط_الخريطة'] || '').trim();
+  if (map) out.push({ label: 'الموقع على الخريطة',
+    val: `<a href="${esc(map)}" target="_blank" rel="noopener">افتح الخريطة ↗</a>` });
+  const w = (CONF['رقم_واتساب'] || WHATSAPP_FALLBACK || '').replace(/\D/g, '');
+  if (w) out.push({ label: 'واتساب',
+    val: `<a href="https://wa.me/${w}" target="_blank" rel="noopener" dir="ltr">${w}</a>` });
+  return out;
+}
+
+function renderStoreInfo() {
+  const box = document.getElementById('storeInfo');
+  if (!box) return;
+  const about = (CONF['عن_المتجر'] || '').trim();
+  const rows = infoRows();
+  if (!about && !rows.length) { box.innerHTML = ''; return; }
+  box.innerHTML =
+    (about ? `<div class="about">${esc(about)}</div>` : '') +
+    rows.map(r => `<div><i>${esc(r.label)}</i><em>${r.val}</em></div>`).join('');
+}
+
+function openInfo() {
+  const about = (CONF['عن_المتجر'] || '').trim();
+  const rows = infoRows();
+  document.getElementById('mbox').innerHTML = `
+    <button class="mclose" onclick="closeModal()">✕</button>
+    <div style="padding:22px 22px 24px">
+      <h2 style="margin:0 0 4px; font-size:19px">${esc(CONF['اسم_المتجر'] || 'الطفل المبتسم')}</h2>
+      <div style="color:var(--muted); font-size:13px; margin-bottom:16px">${esc(CONF['وصف_المتجر'] || '')}</div>
+      ${about ? `<p style="margin:0 0 16px; line-height:1.8">${esc(about)}</p>` : ''}
+      <div class="specs">
+        ${rows.map(r => `<div class="spec"><span>${esc(r.label)}</span><b>${r.val}</b></div>`).join('')}
+      </div>
+      ${(CONF['تنويه_الاسعار'] || '') ?
+        `<div style="margin-top:14px; font-size:12.5px; color:var(--muted)">${esc(CONF['تنويه_الاسعار'])}</div>` : ''}
+    </div>`;
+  document.getElementById('modal').classList.add('on');
 }
 
 /* ---------- عدّاد القسم ---------- */
-const catCount = n => ITEMS.filter(i => i.cat === n).length;
+const catCount = n => ITEMS.filter(i => hasCat(i, n)).length;
 const catIcon = n => (CATS.find(c => c.name === n) || {}).icon || '🧸';
 
 /* ---------- شريط الأقسام ---------- */
@@ -733,6 +817,16 @@ function fillCatSelect() {
   s.innerHTML = h; s.value = f.cat;
 }
 
+function fillAgeSelect() {
+  const s = document.getElementById('fAge');
+  if (!s) return;
+  if (!AGES.length) { s.style.display = 'none'; return; }
+  s.style.display = '';
+  s.innerHTML = '<option value="">بنات وأولاد</option>' +
+    AGES.map(a => `<option value="${esc(a)}">${esc(a)} (${ITEMS.filter(i => i.age === a).length})</option>`).join('');
+  s.value = f.age;
+}
+
 function setCat(c) {
   f.cat = c;
   renderCats(); renderNav();
@@ -747,7 +841,9 @@ function filtered(list) {
   if (f.cat === '__offer') a = a.filter(i => i.offer);
   else if (f.cat === '__new') a = a.filter(i => i.isNew);
   else if (f.cat === '__fav') a = a.filter(i => favs.includes(i.code));
-  else if (f.cat) a = a.filter(i => i.cat === f.cat);
+  else if (f.cat) a = a.filter(i => hasCat(i, f.cat));
+
+  if (f.age) a = a.filter(i => i.age === f.age);
 
   if (f.price) {
     const [lo, hi] = f.price.split('-').map(Number);
@@ -755,7 +851,8 @@ function filtered(list) {
   }
   if (f.q) {
     const t = f.q.toLowerCase().trim();
-    a = a.filter(i => (i.name + ' ' + i.code + ' ' + i.tags + ' ' + i.cat).toLowerCase().includes(t));
+    a = a.filter(i => (i.name + ' ' + i.code + ' ' + i.tags + ' ' + i.age + ' ' +
+      i.cats.join(' ')).toLowerCase().includes(t));
   }
   return sortList(a);
 }
@@ -770,7 +867,7 @@ function sortList(a) {
 }
 
 /* يعرض «الكل» على شكل أقسام بصفوف متحركة */
-const groupedView = () => f.cat === '' && !f.q && !f.price && !f.list;
+const groupedView = () => f.cat === '' && !f.q && !f.price && !f.age && !f.list;
 
 function render() {
   const secs = document.getElementById('sections');
@@ -808,7 +905,7 @@ function renderSections() {
   if (offers.length) blocks.push({ key: '__offer', icon: '🔥', name: 'العروض', items: offers });
   if (news.length) blocks.push({ key: '__new', icon: '✨', name: 'وصل حديثاً', items: news });
   CATS.forEach(c => {
-    const items = sortList(ITEMS.filter(i => i.cat === c.name));
+    const items = sortList(ITEMS.filter(i => hasCat(i, c.name)));
     if (items.length) blocks.push({ key: c.name, icon: c.icon || '🧸', name: c.name, items });
   });
 
@@ -1145,7 +1242,8 @@ function openItem(code) {
           <span class="p-sub">سعر الجملة</span>
         </div>
         <div>
-          <div class="spec"><span>القسم</span><b>${esc(i.cat)}</b></div>
+          <div class="spec"><span>القسم</span><b>${esc(catsTxt(i))}</b></div>
+          ${i.age ? `<div class="spec"><span>الفئة</span><b>${esc(i.age)}</b></div>` : ''}
           <div class="spec"><span>وحدة البيع</span><b>${esc(unitOf(i))}</b></div>
           ${i.pcs ? `<div class="spec"><span>عدد الحبات بالكرتون</span><b>${i.pcs}</b></div>` : ''}
           ${(i.pcs && !ctnOnly(i)) ? `<div class="spec"><span>سعر الكرتون</span><b>${money(i.ctn)} ${cur()}</b></div>` : ''}
@@ -1238,6 +1336,8 @@ function deepLink() {
 /* ---------- الأحداث ---------- */
 let qT;
 document.getElementById('q').oninput = e => { clearTimeout(qT); qT = setTimeout(() => { f.q = e.target.value; render(); }, 220); };
+document.getElementById('btnInfo').onclick = openInfo;
+document.getElementById('fAge').onchange = e => { f.age = e.target.value; render(); };
 document.getElementById('fCatSel').onchange = e => setCat(e.target.value);
 document.getElementById('fPrice').onchange = e => { f.price = e.target.value; render(); };
 document.getElementById('fSort').onchange = e => { f.sort = e.target.value; render(); };
