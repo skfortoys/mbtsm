@@ -548,8 +548,31 @@ const VAT_FALLBACK = 15;                    // نسبة الضريبة % — ت�
 const MIN_QTY_FALLBACK = 3;                 // أقل كمية للصنف — تُقرأ من الاعدادات (اقل_كمية_للصنف)
 /* ================================================================== */
 
+/* headers=1 ضروري: بدونه يقرّر جوجل بنفسه هل الصف الأول عناوين أم بيانات،
+   حسب أنواع الأعمدة. فبمجرد كتابة رقم في «سعر العرض» يتغيّر نوع العمود
+   ويصبح الصف الأول بيانات — فتضيع أسماء الأعمدة ويُفرَّغ الكتالوج. */
 const CSV = (name) =>
-  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}&_=${Date.now()}`;
+  `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv` +
+  `&sheet=${encodeURIComponent(name)}&headers=1&_=${Date.now()}`;
+
+/* جوجل شيت بلغة عربية يُصدّر الأرقام هكذا: ١٢٫٥٠ أو 12٫50 أو 1٬234.
+   parseFloat لا يفهمها، فنُطبّعها أولاً: أرقام هندية → لاتينية،
+   الفاصلة العشرية العربية ٫ → نقطة، وفاصل الآلاف ٬ والمسافات تُحذف. */
+function arNum(v) {
+  if (v == null) return 0;
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  let s = String(v).trim();
+  if (!s) return 0;
+  s = s.replace(/[\u0660-\u0669]/g, d => String(d.charCodeAt(0) - 0x0660))   // ٠-٩
+       .replace(/[\u06F0-\u06F9]/g, d => String(d.charCodeAt(0) - 0x06F0))   // ۰-۹ فارسية
+       .replace(/[\u066B\u060C]/g, '.')        // ٫ الفاصلة العشرية · ، 
+       .replace(/[\u066C\u2066-\u2069\u200E\u200F\s]/g, '')  // ٬ وعلامات الاتجاه
+       .replace(/[^\d.\-]/g, '');               // أي عملة أو نص ملتصق
+  const parts = s.split('.');
+  if (parts.length > 2) s = parts.shift() + '.' + parts.join('');
+  const n = parseFloat(s);
+  return isFinite(n) ? n : 0;
+}
 
 const PH = 'data:image/svg+xml;utf8,' + encodeURIComponent(
   `<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300"><rect width="300" height="300" fill="#F1F5FA"/><text x="150" y="163" font-size="64" text-anchor="middle" fill="#BCC9DA">🧸</text></svg>`);
@@ -696,11 +719,21 @@ async function boot() {
     });
     /* هل وصل شيت التحكم؟ لو لا، فلا صور ولا أقسام — نعرض الأصناف بأسعارها
        بصورة مبدئية بدل أن تُفرَّغ الصفحة تماماً. */
-    const ctrlOK = Object.keys(C).length > 0;
+    let ctrlOK = Object.keys(C).length > 0;
+    /* لو وصلت صفوف لكن لا يحمل أي صنف معرف صورة، فالأغلب أن أسماء الأعمدة
+       لم تُقرأ (عناوين مزاحة). نتعامل معه كشيت غير صالح بدل تفريغ الكتالوج. */
+    if (ctrlOK) {
+      const anyImg = Object.keys(C).some(k => String(C[k]['معرف الصورة'] || '').trim());
+      const anyCat = Object.keys(C).some(k => String(C[k]['القسم'] || '').trim());
+      if (!anyImg && !anyCat) {
+        console.warn('شيت التحكم وصل لكن أعمدته غير مقروءة — تجاهلته حمايةً للكتالوج');
+        ctrlOK = false;
+      }
+    }
 
     ITEMS = base.map(b => {
       const r = C[b.code] || {};
-      const sale = parseFloat(r['سعر العرض']) || 0;         // سعر التخفيض للحبة
+      const sale = arNum(r['سعر العرض']);                   // سعر التخفيض للحبة
       const price = (sale > 0 && sale < b.price) ? sale : b.price;
       const was = (sale > 0 && sale < b.price) ? b.price : 0;   // السعر قبل التخفيض
       return {
@@ -714,7 +747,7 @@ async function boot() {
         offer: yes(r['عرض']) || was > 0,
         isNew: yes(r['جديد']),
         tags: r['وسوم'] || '',
-        ord: parseFloat(r['الترتيب']) || 9999,
+        ord: arNum(r['الترتيب']) || 9999,
         note: r['ملاحظة'] || '',
         show: String(r['إظهار'] || '').trim() !== 'لا'
       };
@@ -988,7 +1021,9 @@ function render() {
   const g = document.getElementById('grid');
   stopRails();
 
-  if (groupedView()) { g.innerHTML = ''; g.classList.add('hidden'); secs.classList.remove('hidden'); renderSections(); return; }
+  if (groupedView() && ITEMS.some(i => i.cats.length)) {
+    g.innerHTML = ''; g.classList.add('hidden'); secs.classList.remove('hidden'); renderSections(); return;
+  }
 
   secs.classList.add('hidden'); secs.innerHTML = ''; g.classList.remove('hidden');
   const a = filtered();
@@ -1022,6 +1057,9 @@ function renderSections() {
     const items = sortList(ITEMS.filter(i => hasCat(i, c.name)));
     if (items.length) blocks.push({ key: c.name, icon: c.icon || '🧸', name: c.name, items });
   });
+  /* أصناف بلا قسم — تظهر مجمّعة بدل أن تسقط من العرض */
+  const loose = sortList(ITEMS.filter(i => !i.cats.length));
+  if (loose.length) blocks.push({ key: '', icon: '🧸', name: 'غير مصنّف', items: loose });
 
   document.getElementById('sections').innerHTML = blocks.map(b => `
     <section class="sec">
