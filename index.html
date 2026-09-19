@@ -634,11 +634,19 @@ const stepOf  = (it) => ctnOnly(it) ? it.pcs : 1;
 /* أقل كمية مسموحة لهذا الصنف تحديداً */
 const minOf   = (it) => ctnOnly(it) ? it.pcs : minQty();
 /* تقريب الكمية لأعلى مضاعف صحيح مسموح */
+/* أقصى كمية للطلب = المتاح (مقصوص ومقرَّب لأسفل في ملف البيانات).
+   صفر = لم يُنشر حد، فلا يُطبَّق أي سقف. */
+const maxOf   = (it) => (it && it.max > 0) ? it.max : Infinity;
+const hasMax  = (it) => !!it && it.max > 0;
+const dispMax = (it) => !hasMax(it) ? Infinity
+                      : (ctnOnly(it) ? Math.floor(it.max / it.pcs) : it.max);
 const snapQty = (it, q) => {
-  const s = stepOf(it), m = minOf(it);
+  const s = stepOf(it), m = minOf(it), M = maxOf(it);
   q = parseInt(q) || 0;
   if (q < m) return m;
-  return Math.ceil(q / s) * s;
+  q = Math.ceil(q / s) * s;
+  if (q > M) q = Math.floor(M / s) * s;   /* لأسفل حتى لا يتجاوز المتاح */
+  return Math.max(q, m);
 };
 /* أزرار الكميات السريعة */
 /* وحدة العرض وسعرها وكميتها — الأصناف بالكرتون تُعرض بالكرتون لا بالحبة */
@@ -660,12 +668,21 @@ const saleTag = (it) => it.was
   ? `<span class="p-was">${money(wasOf(it))}</span><span class="p-off">-${offPct(it)}%</span>` : '';
 /* أزرار الكميات السريعة */
 const quickBtns = (it) => {
+  const M = maxOf(it);
+  /* الخيارات التي تتجاوز المتاح تُحذف بصمت — لا رقم يُعرض للعميل.
+     الكمية المتبقية لا تظهر في الصفحة إطلاقاً؛ تنبيه واحد فقط يظهر
+     لحظة محاولة تجاوز الحد. */
+  const trim = (list) => {
+    const ok = list.filter(b => b[0] > 0 && b[0] <= M);
+    return ok.length ? ok : list.slice(0, 1);
+  };
   if (ctnOnly(it)) {
-    return [[it.pcs, 'كرتون'], [it.pcs * 2, '2 كرتون'], [it.pcs * 3, '3 كرتون'], [it.pcs * 5, '5 كرتون']];
+    return trim([[it.pcs, 'كرتون'], [it.pcs * 2, '2 كرتون'],
+                 [it.pcs * 3, '3 كرتون'], [it.pcs * 5, '5 كرتون']]);
   }
   /* شدّ الكرتون بين 7 و10: خيار «12» يُستبدل بعدد شدّ الكرتون */
   const third = (it.pcs >= 7 && it.pcs <= 10) ? [it.pcs, String(it.pcs)] : [12, '12'];
-  return [[3, '3'], [6, '6'], third, [it.pcs || 0, 'كرتون']];
+  return trim([[3, '3'], [6, '6'], third, [it.pcs || 0, 'كرتون']]);
 };
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -711,7 +728,8 @@ async function fetchItems() {
     unit: String(x.u || 'حبة').trim(),
     price: parseFloat(x.p) || 0,
     pcs: parseInt(x.k) || 0,
-    inStock: String(x.s) !== '0'
+    inStock: String(x.s) !== '0',
+    max: parseInt(x.m) || 0        // أقصى كمية للطلب (بالحبات) — 0 = بلا حد
   })).filter(x => x.code && x.name);
 }
 let GEN = '';
@@ -759,7 +777,7 @@ async function boot() {
       const price = (sale > 0 && sale < b.price) ? sale : b.price;
       const was = (sale > 0 && sale < b.price) ? b.price : 0;   // السعر قبل التخفيض
       return {
-        code: b.code, name: b.name, unit: b.unit, pcs: b.pcs,
+        code: b.code, name: b.name, unit: b.unit, pcs: b.pcs, max: b.max,
         price, was,
         ctn: b.pcs ? price * b.pcs : 0,
         inStock: b.inStock,
@@ -1204,7 +1222,7 @@ function cardHTML(i) {
         }).join('')}
       </div>
       <div class="addrow">
-        <input class="qty-in js-qty" type="number" min="${dispMin(i)}" step="1"
+        <input class="qty-in js-qty" type="number" min="${dispMin(i)}"${hasMax(i) ? ` max="${dispMax(i)}"` : ''} step="1"
                value="${inCart ? dispQty(i, inCart.qty) : dispMin(i)}"
                title="${ctnOnly(i) ? 'الكمية بعدد الكراتين' : 'الكمية بعدد الحبات'}">
         <button class="add ${inCart ? 'in' : ''} js-add">${inCart ? '✓ في السلة' : 'إضافة'}</button>
@@ -1246,7 +1264,11 @@ function addToCart(code, qty) {
                       : `أقل كمية للطلب ${m} ${it.unit} لكل صنف`);
     return false;
   }
-  if (qty !== raw) toast(`الكمية تُعدَّل لمضاعف الكرتون: ${qty} ${it.unit} (${qty / it.pcs} كرتون)`);
+  if (hasMax(it) && raw > maxOf(it)) {
+    toast(`أقصى كمية متاحة لهذا الصنف ${dispMax(it)} ${unitOf(it)} — عُدِّلت الكمية`);
+  } else if (qty !== raw) {
+    toast(`الكمية تُعدَّل لمضاعف الكرتون: ${qty} ${it.unit} (${qty / it.pcs} كرتون)`);
+  }
   cart[code] = { qty };
   save('smiling_cart', cart); updBadges(); refreshCardStates(); renderCart();
   toast(`أُضيف ${qty} ${it.unit} من ${it.name}`);
@@ -1261,7 +1283,12 @@ function setQty(code, qty) {
     toast(it && ctnOnly(it) ? `أقل كمية كرتون (${it.pcs} ${it.unit})` : `أقل كمية للطلب ${m} لكل صنف`);
     cart[code] = { qty: m };
   }
-  else cart[code] = { qty: it ? snapQty(it, qty) : qty };
+  else {
+    const q2 = it ? snapQty(it, qty) : qty;
+    if (it && hasMax(it) && qty > maxOf(it))
+      toast(`أقصى كمية متاحة لهذا الصنف ${dispMax(it)} ${unitOf(it)}`);
+    cart[code] = { qty: q2 };
+  }
   save('smiling_cart', cart); updBadges(); renderCart(); refreshCardStates();
 }
 /* تحديث أزرار البطاقات دون إعادة بناء الصفحة (حتى لا تتوقف الصفوف المتحركة) */
@@ -1313,7 +1340,7 @@ function renderCart() {
         <div class="c">${esc(l.it.code)} · ${money(priceOf(l.it))} ${cur()} / ${esc(unitOf(l.it))}</div>
         <div class="stepper">
           <button class="js-inc">+</button>
-          <input class="js-n" type="number" min="${dispMin(l.it)}" step="1" value="${dispQty(l.it, l.qty)}">
+          <input class="js-n" type="number" min="${dispMin(l.it)}"${hasMax(l.it) ? ` max="${dispMax(l.it)}"` : ''} step="1" value="${dispQty(l.it, l.qty)}">
           <button class="js-dec">−</button>
         </div>
       </div>
@@ -1432,7 +1459,7 @@ function openItem(code) {
           }).join('')}
         </div>
         <div class="addrow">
-          <input class="qty-in" id="mQty" type="number" min="${dispMin(i)}" step="1" value="${cart[i.code] ? dispQty(i, cart[i.code].qty) : dispMin(i)}">
+          <input class="qty-in" id="mQty" type="number" min="${dispMin(i)}"${hasMax(i) ? ` max="${dispMax(i)}"` : ''} step="1" value="${cart[i.code] ? dispQty(i, cart[i.code].qty) : dispMin(i)}">
           <button class="add" onclick="if(addToCart('${esc(i.code)}', realQty(ITEMS.find(x=>x.code==='${esc(i.code)}'), document.getElementById('mQty').value))!==false) closeModal();">أضف للسلة</button>
         </div>
         <button class="ghost" onclick="shareItem('${esc(i.code)}')">🔗 نسخ رابط الصنف</button>
