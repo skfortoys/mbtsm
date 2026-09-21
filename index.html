@@ -71,6 +71,7 @@ body{
 ::-webkit-scrollbar-thumb{background:#C2D2E4; border-radius:99px}
 ::-webkit-scrollbar-thumb:hover{background:var(--sky)}
 img{max-width:100%; display:block}
+.sar{width:.92em;height:.92em;display:inline-block;vertical-align:-.11em;color:currentColor;flex:none}
 button,input,select,textarea{font-family:inherit; font-size:inherit}
 button{cursor:pointer; border:0; background:none; color:inherit}
 a{color:inherit}
@@ -448,6 +449,12 @@ footer .fbar .note{color:rgba(255,255,255,.5)}
 </style>
 </head>
 <body dir="rtl">
+<svg style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true" focusable="false">
+  <symbol id="sar" viewBox="0 0 1124.14 1256.39">
+    <path fill="currentColor" d="M699.62,1113.02h0c-20.06,44.48-33.32,92.75-38.4,143.37l424.51-90.24c20.06-44.47,33.31-92.75,38.4-143.37l-424.51,90.24Z"/>
+    <path fill="currentColor" d="M1085.73,895.8c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.33v-135.2l292.27-62.11c20.06-44.47,33.32-92.75,38.4-143.37l-330.68,70.27V66.13c-50.67,28.45-95.67,66.32-132.25,110.99v403.35l-132.25,28.11V0c-50.67,28.44-95.67,66.32-132.25,110.99v525.69l-295.91,62.88c-20.06,44.47-33.33,92.75-38.42,143.37l334.33-71.05v170.26l-358.3,76.14c-20.06,44.47-33.32,92.75-38.4,143.37l375.04-79.7c30.53-6.35,56.77-24.4,73.83-49.24l68.78-101.97v-.02c7.14-10.55,11.3-23.27,11.3-36.97v-149.98l132.25-28.11v270.4l424.53-90.28Z"/>
+  </symbol>
+</svg>
 
 <header>
   <div class="wrap hdr">
@@ -616,7 +623,16 @@ let f = { cat: '', price: '', age: '', sort: 'def', q: '', list: false };
 function load(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch (e) { return d; } }
 function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 const money = n => (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const cur = () => CONF['العملة'] || 'ر.س';
+const SAR_SVG = '<svg class="sar" aria-label="ريال سعودي" role="img"><use href="#sar"></use></svg>';
+/* العملة الافتراضية = الريال السعودي برمزه الجديد.
+   أي قيمة أخرى في صفحة الاعدادات تُعرض نصّاً كما هي. */
+const curRaw = () => String(CONF['العملة'] || '').trim();
+const isSAR  = () => { const c = curRaw();
+  return !c || ['ر.س','ر.س.','ريال','ريال سعودي','SAR','sar','SR'].indexOf(c) > -1; };
+/* للعرض داخل الصفحة (HTML) */
+const cur    = () => isSAR() ? SAR_SVG : esc(curRaw());
+/* للنص العادي: واتساب والنسخ — الرمز الجديد لا يظهر في كل الأجهزة */
+const curTxt = () => isSAR() ? 'ر.س' : curRaw();
 const yes = v => String(v || '').trim() === 'نعم';
 const vatRate = () => {
   const v = parseFloat(String(CONF['نسبة_الضريبة'] ?? '').replace('%', ''));
@@ -1214,7 +1230,7 @@ function cardHTML(i) {
       </div>
       ${ctnOnly(i)
         ? `<div class="onlyctn">📦 وحدة البيع: كرتون</div>`
-        : (i.pcs ? `<div class="carton">الكرتون <b>${i.pcs}</b> ${esc(i.unit)} · <b>${money(i.ctn)}</b> ${cur()}</div>` : '')}
+        : (i.pcs ? `<div class="carton">الكرتون <b>${i.pcs}</b> ${esc(i.unit)} · <b>${money(i.ctn)}</b>&nbsp;${cur()}</div>` : '')}
       <div class="qbtns${ctnOnly(i) ? ' ctn2' : ''}">
         ${quickBtns(i).map((b, k) => {
           const last = k === 3, off = last && !ctnOnly(i) && !i.pcs;
@@ -1337,7 +1353,7 @@ function renderCart() {
       <img src="${imgUrl(l.it.img, 120)}" onerror="onImgErr(this,'${l.it.img}')" alt="">
       <div class="m">
         <div class="n">${esc(l.it.name)}</div>
-        <div class="c">${esc(l.it.code)} · ${money(priceOf(l.it))} ${cur()} / ${esc(unitOf(l.it))}</div>
+        <div class="c">${esc(l.it.code)} · ${money(priceOf(l.it))}&nbsp;${cur()} / ${esc(unitOf(l.it))}</div>
         <div class="stepper">
           <button class="js-inc">+</button>
           <input class="js-n" type="number" min="${dispMin(l.it)}"${hasMax(l.it) ? ` max="${dispMax(l.it)}"` : ''} step="1" value="${dispQty(l.it, l.qty)}">
@@ -1378,11 +1394,11 @@ function renderCart() {
     <div class="totals">
       <div class="sumrow"><span>عدد الأصناف</span><b>${L.length}</b></div>
       <div class="sumrow"><span>إجمالي القطع</span><b>${pieces}</b></div>
-      <div class="sumrow"><span>الإجمالي</span><b>${money(sub)} ${cur()}</b></div>
-      <div class="sumrow vat"><span>ضريبة القيمة المضافة ${rate}%</span><b>+ ${money(vat)} ${cur()}</b></div>
-      <div class="sumrow grand"><span>الإجمالي شامل الضريبة</span><b>${money(grand)} ${cur()}</b></div>
+      <div class="sumrow"><span>الإجمالي</span><b>${money(sub)}&nbsp;${cur()}</b></div>
+      <div class="sumrow vat"><span>ضريبة القيمة المضافة ${rate}%</span><b>+ ${money(vat)}&nbsp;${cur()}</b></div>
+      <div class="sumrow grand"><span>الإجمالي شامل الضريبة</span><b>${money(grand)}&nbsp;${cur()}</b></div>
     </div>
-    ${under ? `<div class="note" style="color:var(--danger)">الحد الأدنى للطلب ${money(min)} ${cur()}</div>` : ''}
+    ${under ? `<div class="note" style="color:var(--danger)">الحد الأدنى للطلب ${money(min)}&nbsp;${cur()}</div>` : ''}
     <button class="wa" id="sendWA" ${under ? 'disabled style="opacity:.5"' : ''}>
       <span style="font-size:18px">💬</span> إرسال الطلب على واتساب</button>
     <button class="ghost" id="copyOrder">📋 نسخ الطلب كنص</button>
@@ -1410,13 +1426,13 @@ function orderText() {
   t += `──────────────\n`;
   L.forEach((l, n) => {
     const ctn = (!ctnOnly(l.it) && l.it.pcs && l.qty % l.it.pcs === 0) ? ` (${l.qty / l.it.pcs} كرتون)` : '';
-    t += `${n + 1}) ${l.it.code} — ${dispQty(l.it, l.qty)} ${unitOf(l.it)}${ctn} × ${money(priceOf(l.it))} ${cur()}\n`;
+    t += `${n + 1}) ${l.it.code} — ${dispQty(l.it, l.qty)} ${unitOf(l.it)}${ctn} × ${money(priceOf(l.it))} ${curTxt()}\n`;
   });
   t += `──────────────\n`;
   t += `عدد الأصناف: ${L.length}\nإجمالي القطع: ${pieces}\n`;
-  t += `الإجمالي: ${money(sub)} ${cur()}\n`;
-  t += `ضريبة القيمة المضافة ${rate}%: ${money(vat)} ${cur()}\n`;
-  t += `*الإجمالي شامل الضريبة: ${money(grand)} ${cur()}*\n`;
+  t += `الإجمالي: ${money(sub)} ${curTxt()}\n`;
+  t += `ضريبة القيمة المضافة ${rate}%: ${money(vat)} ${curTxt()}\n`;
+  t += `*الإجمالي شامل الضريبة: ${money(grand)} ${curTxt()}*\n`;
   if (g('cNote')) t += `\nملاحظات: ${g('cNote')}`;
   return t;
 }
@@ -1447,7 +1463,7 @@ function openItem(code) {
           ${i.age ? `<div class="spec"><span>الفئة</span><b>${esc(i.age)}</b></div>` : ''}
           <div class="spec"><span>وحدة البيع</span><b>${esc(unitOf(i))}</b></div>
           ${i.pcs ? `<div class="spec"><span>عدد الحبات بالكرتون</span><b>${i.pcs}</b></div>` : ''}
-          ${(i.pcs && !ctnOnly(i)) ? `<div class="spec"><span>سعر الكرتون</span><b>${money(i.ctn)} ${cur()}</b></div>` : ''}
+          ${(i.pcs && !ctnOnly(i)) ? `<div class="spec"><span>سعر الكرتون</span><b>${money(i.ctn)}&nbsp;${cur()}</b></div>` : ''}
           ${ctnOnly(i) ? `<div class="spec"><span>طريقة البيع</span><b style="color:var(--sky-d)">بالكرتون فقط</b></div>` : ''}
           <div class="spec"><span>الحالة</span><b style="color:${i.inStock ? 'var(--green)' : 'var(--red)'}">${i.inStock ? 'متوفر' : 'غير متوفر حالياً'}</b></div>
           ${i.note ? `<div class="spec"><span>ملاحظة</span><b>${esc(i.note)}</b></div>` : ''}
@@ -1483,7 +1499,7 @@ function renderFav() {
   const a = ITEMS.filter(i => favs.includes(i.code));
   document.getElementById('favBody').innerHTML = a.length
     ? a.map(i => `<div class="ci"><img src="${imgUrl(i.img,120)}" onerror="onImgErr(this,'${i.img}')" alt="">
-        <div class="m"><div class="n">${esc(i.name)}</div><div class="c">${esc(i.code)} · ${money(priceOf(i))} ${cur()} / ${esc(unitOf(i))}</div>
+        <div class="m"><div class="n">${esc(i.name)}</div><div class="c">${esc(i.code)} · ${money(priceOf(i))}&nbsp;${cur()} / ${esc(unitOf(i))}</div>
         <button class="qb" style="margin-top:6px;padding:5px 12px" onclick="addToCart('${esc(i.code)}',minOf(i))">أضف للسلة</button></div>
         <div class="t"><button class="rm" onclick="toggleFav('${esc(i.code)}');renderFav()">✕</button></div></div>`).join('')
     : `<div class="state"><div class="em">♡</div><b>لا توجد مفضلة</b>اضغط ♡ على أي صنف</div>`;
