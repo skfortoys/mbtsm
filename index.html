@@ -162,6 +162,7 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 }
 .pill.on{background:var(--navy); color:#fff; border-color:var(--navy)}
 .count{margin-inline-start:auto; color:var(--muted); font-size:13px}
+.count .vatnote{color:var(--sky-d); font-weight:700}
 
 /* ===================== الشبكة والبطاقات ===================== */
 .grid{display:grid; gap:14px; padding-bottom:40px; grid-template-columns:repeat(auto-fill,minmax(190px,1fr))}
@@ -238,7 +239,8 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 .rail::-webkit-scrollbar{display:none}
 .rail.drag{cursor:grabbing}
 .rail.drag .card{pointer-events:none}
-.rail .card{flex:0 0 186px; width:186px}
+.rail .card,.rail .rail-skel{flex:0 0 186px; width:186px}
+.rail .rail-skel{min-height:var(--card-h,420px)}
 .rail .name{min-height:38px; font-size:13.5px}
 
 /* ===================== الحالات ===================== */
@@ -430,7 +432,7 @@ footer .fbar .note{color:rgba(255,255,255,.5)}
   input,select,textarea{font-size:16px}
   .icobtn{width:40px; height:40px; border-radius:12px; font-size:18px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
-  .rail .card{flex-basis:158px; width:158px}
+  .rail .card,.rail .rail-skel{flex-basis:158px; width:158px}
   .sel{max-width:none; flex:1 1 44%; min-width:0}
   .count{flex-basis:100%; margin:2px 0 0}
   .grid.list .thumb{width:110px}
@@ -1098,7 +1100,7 @@ function render() {
 
   secs.classList.add('hidden'); secs.innerHTML = ''; g.classList.remove('hidden');
   const a = filtered();
-  document.getElementById('count').textContent = a.length + ' صنف';
+  setCount(a.length + ' صنف');
   g.className = 'grid' + (f.list ? ' list' : '');
 
   if (!a.length) {
@@ -1108,16 +1110,39 @@ function render() {
     return;
   }
   document.getElementById('state').innerHTML = '';
-  g.innerHTML = a.map(cardHTML).join('');
-  bindCards(g);
+  /* دفعات: أول 48 صنف فوراً، والباقي يُبنى عند الاقتراب من آخر الصفحة */
+  g.innerHTML = '';
+  let shown = 0;
+  const more = () => {
+    const box = document.createElement('div');
+    box.innerHTML = a.slice(shown, shown + GRID_STEP).map(cardHTML).join('');
+    bindCards(box);
+    g.append(...box.children);
+    shown += GRID_STEP;
+  };
+  const end = document.getElementById('state');
+  /* يكمل حتى يبتعد آخر الشبكة عن الشاشة (مهم للشاشات الطويلة وعرض القائمة) */
+  const fill = () => {
+    while (shown < a.length && end.getBoundingClientRect().top < innerHeight + 1200) more();
+    if (shown >= a.length) io.disconnect();
+  };
+  const io = new IntersectionObserver(e => { if (e[0].isIntersecting) fill(); }, { rootMargin: '1200px 0px' });
+  more();
+  if (shown < a.length) { io.observe(end); lazyObs.push(io); }
 }
+const GRID_STEP = 48;
+/* العدّاد + تنبيه دائم بأن الأسعار قبل الضريبة */
+function setCount(t) {
+  document.getElementById('count').innerHTML =
+    `${esc(t)} <span class="vatnote">· الأسعار غير شاملة الضريبة ${vatRate()}%</span>`;
+}
+let lazyObs = [];          // مراقبات البناء الكسول — تُفصل عند كل إعادة عرض
 
 /* ---------- عرض الأقسام بصفوف ---------- */
 const RAIL_MAX = 20;
 function renderSections() {
   document.getElementById('state').innerHTML = '';
-  document.getElementById('count').textContent = ITEMS.length + ' صنف · ' +
-    CATS.filter(c => catCount(c.name)).length + ' قسم';
+  setCount(ITEMS.length + ' صنف · ' + CATS.filter(c => catCount(c.name)).length + ' قسم');
 
   const blocks = [];
   const offers = sortList(ITEMS.filter(i => i.offer));
@@ -1140,18 +1165,36 @@ function renderSections() {
         <span class="n">${b.items.length} صنف</span>
         <button class="more" data-c="${esc(b.key)}">عرض الكل ←</button>
       </div>
-      <div class="rail">${b.items.slice(0, RAIL_MAX).map(cardHTML).join('')}</div>
+      <div class="rail" data-i="${blocks.indexOf(b)}">${RAIL_SKEL}</div>
     </section>`).join('');
 
   const secs = document.getElementById('sections');
   secs.querySelectorAll('.more').forEach(b => b.onclick = () => setCat(b.dataset.c));
-  bindCards(secs);
-  secs.querySelectorAll('.rail').forEach((r, idx) => { dragScroll(r); autoScroll(r, idx % 2 === 0 ? 1 : -1); });
+
+  /* بناء كسول: صف القسم لا تُبنى بطاقاته إلا عند اقترابه من الشاشة
+     (كانت الصفحة تبني ~420 بطاقة و11 ألف عنصر دفعة واحدة) */
+  const fillRail = r => {
+    const idx = +r.dataset.i;
+    r.innerHTML = blocks[idx].items.slice(0, RAIL_MAX).map(cardHTML).join('');
+    bindCards(r); dragScroll(r); autoScroll(r, idx % 2 === 0 ? 1 : -1);
+    /* هيكل الصفوف التالية يأخذ ارتفاع البطاقة الحقيقي فلا تقفز الصفحة */
+    const c = r.querySelector('.card');
+    if (c && !secs.style.getPropertyValue('--card-h')) secs.style.setProperty('--card-h', c.offsetHeight + 'px');
+  };
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { io.unobserve(e.target); fillRail(e.target); }
+  }), { rootMargin: '900px 0px' });
+  secs.querySelectorAll('.rail').forEach(r => io.observe(r));
+  lazyObs.push(io);
 }
+const RAIL_SKEL = '<div class="skel rail-skel"><div class="a"></div><div class="b"></div><div class="b" style="width:60%"></div></div>'.repeat(6);
 
 /* ---------- تمرير تلقائي بطيء + سحب باليد ---------- */
 let railTimers = [];
-function stopRails() { railTimers.forEach(t => t.stop()); railTimers = []; }
+function stopRails() {
+  railTimers.forEach(t => t.stop()); railTimers = [];
+  lazyObs.forEach(o => o.disconnect()); lazyObs = [];
+}
 
 function autoScroll(el, dir) {
   const SPEED = 0.30;                 // بطيء واحترافي
@@ -1191,7 +1234,7 @@ function autoScroll(el, dir) {
 }
 
 /* سحب أفقي بالماوس (اللمس يعمل أصلاً) */
-function dragScroll(el) {
+function dragScroll(el, wheelX = false) {
   let down = false, sx = 0, sl = 0, moved = 0, cap = 0;
   el.addEventListener('pointerdown', e => {
     if (e.pointerType === 'touch') return;
@@ -1216,8 +1259,9 @@ function dragScroll(el) {
   el.addEventListener('pointerup', up);
   el.addEventListener('pointercancel', up);
   el.addEventListener('click', e => { if (moved) { e.stopPropagation(); e.preventDefault(); moved = 0; } }, true);
-  // عجلة الماوس تُمرّر أفقياً
-  el.addEventListener('wheel', e => {
+  /* عجلة الماوس تُمرّر أفقياً — لشريط الأقسام العلوي فقط. في صفوف الأصناف كانت
+     تحبس تنزيل الصفحة لأن الصفوف تغطي عرض الشاشة كله */
+  if (wheelX) el.addEventListener('wheel', e => {
     if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) { el.scrollLeft += e.deltaY; e.preventDefault(); }
   }, { passive: false });
 }
@@ -1600,7 +1644,7 @@ document.getElementById('modal').onclick = e => { if (e.target.id === 'modal') c
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAll(); });
 
 /* سحب شريط الأقسام العلوي */
-dragScroll(document.getElementById('cats'));
+dragScroll(document.getElementById('cats'), true);
 
 /* زر العودة لأعلى */
 const toTop = document.getElementById('toTop');
