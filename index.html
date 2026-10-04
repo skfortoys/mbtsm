@@ -308,7 +308,6 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
   background:var(--surface); outline:none;
 }
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--sky)}
-
 /* اجماليات السلة */
 .totals{background:#F7FAFD; border:1px solid var(--line); border-radius:13px; padding:11px 12px; margin-bottom:11px}
 .sumrow{display:flex; justify-content:space-between; align-items:baseline; font-size:13.5px; color:var(--muted); margin-bottom:6px}
@@ -330,6 +329,29 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 }
 .ghost:hover{border-color:var(--sky); color:var(--navy)}
 .note{font-size:11.5px; color:var(--muted); text-align:center; margin-top:9px; line-height:1.5}
+
+/* ===== سلة مضغوطة: الشريط الثابت = الإجمالي النهائي + زر الواتساب فقط ===== */
+.gt{display:flex; align-items:center; gap:8px; margin-bottom:10px}
+.gt span{font-size:14px; font-weight:800; color:var(--ink)}
+.gt b{margin-inline-start:auto; font-size:19px; color:var(--navy); white-space:nowrap}
+.gt-tog{font-size:12px; font-weight:700; color:var(--sky-d); background:var(--sky-soft); padding:4px 9px; border-radius:8px; white-space:nowrap}
+.gt-more{background:#F7FAFD; border:1px solid var(--line); border-radius:11px; padding:9px 11px 3px; margin-bottom:10px}
+.gt-more .note{margin:0 0 6px; text-align:start}
+.cart-clear{display:block; margin:14px auto 4px; font-size:13px; color:var(--muted); padding:6px 12px}
+.cart-clear:hover{color:var(--red)}
+#cartBody .ci{padding:8px; gap:9px; margin-bottom:8px; align-items:flex-start}
+#cartBody .ci img{width:52px; height:52px}
+#cartBody .ci .n{white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+#cartBody .ci .row{display:flex; align-items:center; gap:8px; margin-top:4px}
+#cartBody .ci .row .stepper{margin-top:0}
+#cartBody .ci .row b{margin-inline-start:auto; font-size:14.5px; color:var(--navy); white-space:nowrap}
+#cartBody .ci .rm{padding:0 2px; line-height:1}
+.cform{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.cform .field{margin:0; min-width:0}
+.cform .field.full{grid-column:1 / -1}
+.cform label{font-size:11.5px; margin-bottom:2px}
+.cform input,.cform select,.cform textarea{padding:8px 10px}
+.cform textarea{resize:none; overflow:hidden; min-height:38px}
 
 /* ===================== نافذة الصنف ===================== */
 .modal{position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; padding:16px}
@@ -1413,29 +1435,42 @@ function renderCart() {
       <div class="m">
         <div class="n">${esc(l.it.name)}</div>
         <div class="c">${esc(l.it.code)} · ${money(priceOf(l.it))}&nbsp;${cur()} / ${esc(unitOf(l.it))}</div>
-        <div class="stepper">
-          <button class="js-inc">+</button>
-          <input class="js-n" type="number" min="${dispMin(l.it)}"${hasMax(l.it) ? ` max="${dispMax(l.it)}"` : ''} step="1" value="${dispQty(l.it, l.qty)}">
-          <button class="js-dec">−</button>
+        ${!l.it.inStock ? '<div class="c" style="color:var(--red);font-weight:700">⚠ غير متوفر حالياً — سيتم التأكيد معك</div>' : ''}
+        <div class="row">
+          <div class="stepper">
+            <button class="js-inc">+</button>
+            <input class="js-n" type="number" min="${dispMin(l.it)}"${hasMax(l.it) ? ` max="${dispMax(l.it)}"` : ''} step="1" value="${dispQty(l.it, l.qty)}">
+            <button class="js-dec">−</button>
+          </div>
+          <b>${money(l.total)}</b>
         </div>
       </div>
-      <div class="t"><button class="rm js-rm">✕</button><b>${money(l.total)}</b></div>
+      <button class="rm js-rm" title="حذف الصنف">✕</button>
     </div>`).join('');
 
   body.insertAdjacentHTML('beforeend', `
-    <div style="margin-top:14px;background:var(--surface);border-radius:13px;padding:13px;box-shadow:var(--shadow)">
-      <div style="font-weight:800;margin-bottom:9px">بيانات الطلب</div>
-      <div class="field"><label>اسم العميل / المحل</label><input id="cName" placeholder="مثال: مؤسسة الأمل للألعاب"></div>
-      <div class="field"><label>رقم الجوال</label><input id="cPhone" type="tel" inputmode="tel" placeholder="05xxxxxxxx"></div>
-      <div class="field"><label>المدينة</label><input id="cCity" placeholder="جدة / الدمام / …"></div>
-      <div class="field"><label>طريقة الاستلام</label>
-        <select id="cShip">
-          <option>استلام من فرع جدة</option>
-          <option>استلام من فرع الدمام</option>
-          <option>شحن عبر شركة نقل</option>
-        </select></div>
-      <div class="field" style="margin-bottom:0"><label>ملاحظات</label><textarea id="cNote" rows="2" placeholder="أي ملاحظة على الطلب"></textarea></div>
-    </div>`);
+    <div style="margin-top:12px;background:var(--surface);border-radius:13px;padding:11px;box-shadow:var(--shadow)">
+      <div style="font-weight:800;margin-bottom:7px">بيانات الطلب</div>
+      <div class="cform">
+        <div class="field"><label>اسم العميل / المحل</label><input id="cName" autocomplete="organization" placeholder="اسم المحل"></div>
+        <div class="field"><label>رقم الجوال</label><input id="cPhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="05xxxxxxxx"></div>
+        <div class="field"><label>المدينة</label><input id="cCity" placeholder="جدة / الدمام…"></div>
+        <div class="field"><label>طريقة الاستلام</label>
+          <select id="cShip">
+            <!-- النص الظاهر مختصر ليناسب نصف العرض، والقيمة الكاملة هي ما يصل في الواتساب -->
+            <option value="استلام من فرع جدة">فرع جدة</option>
+            <option value="استلام من فرع الدمام">فرع الدمام</option>
+            <option value="شحن عبر شركة نقل">شحن (شركة نقل)</option>
+          </select></div>
+        <div class="field full"><label>ملاحظات</label><textarea id="cNote" rows="1" placeholder="أي ملاحظة على الطلب"></textarea></div>
+      </div>
+    </div>
+    <button class="cart-clear" id="clearCart">🗑 تفريغ السلة</button>`);
+
+  /* الملاحظات: سطر واحد يتمدد مع الكتابة */
+  const note = document.getElementById('cNote');
+  const grow = () => { note.style.height = 'auto'; note.style.height = note.scrollHeight + 2 + 'px'; };
+  note.addEventListener('input', grow);
 
   body.querySelectorAll('.ci').forEach(el => {
     const c = el.dataset.c, q = cart[c].qty;
@@ -1446,32 +1481,52 @@ function renderCart() {
     el.querySelector('.js-rm').onclick = () => setQty(c, 0);
   });
 
+  /* بيانات العميل: كانت تُمسح مع كل ضغطة +/− لأن السلة تُعاد بناؤها.
+     الاسم والجوال والمدينة والاستلام تُحفظ في متصفح العميل نفسه لطلبه القادم،
+     والملاحظات للطلب الحالي فقط */
+  const saved = load('smiling_cust', {});
+  CUST_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    const v = id === 'cNote' ? orderNote : saved[id];
+    if (v) el.value = v;
+    el.oninput = el.onchange = () => {
+      if (id === 'cNote') { orderNote = el.value; return; }
+      const s = load('smiling_cust', {}); s[id] = el.value.trim(); save('smiling_cust', s);
+    };
+  });
+  if (note.value) grow();
+
   const min = parseFloat(CONF['الحد_الادنى_للطلب']) || 0;
   const under = min > 0 && sub < min;
 
+  /* الشريط الثابت: الإجمالي النهائي + الواتساب، والتفاصيل تنفتح بضغطة */
   foot.innerHTML = `
-    <div class="totals">
+    ${totalsOpen ? `<div class="gt-more">
       <div class="sumrow"><span>عدد الأصناف</span><b>${L.length}</b></div>
       <div class="sumrow"><span>إجمالي القطع</span><b>${pieces}</b></div>
       <div class="sumrow"><span>الإجمالي</span><b>${money(sub)}&nbsp;${cur()}</b></div>
       <div class="sumrow vat"><span>ضريبة القيمة المضافة ${rate}%</span><b>+ ${money(vat)}&nbsp;${cur()}</b></div>
-      <div class="sumrow grand"><span>الإجمالي شامل الضريبة</span><b>${money(grand)}&nbsp;${cur()}</b></div>
+      ${CONF['تنويه_الاسعار'] ? `<div class="note">${esc(CONF['تنويه_الاسعار'])}</div>` : ''}
+    </div>` : ''}
+    <div class="gt">
+      <button class="gt-tog" id="gtTog">${totalsOpen ? 'إخفاء ▴' : 'التفاصيل ▾'}</button>
+      <span>الإجمالي شامل الضريبة</span>
+      <b>${money(grand)}&nbsp;${cur()}</b>
     </div>
-    ${under ? `<div class="note" style="color:var(--danger)">الحد الأدنى للطلب ${money(min)}&nbsp;${cur()}</div>` : ''}
+    ${under ? `<div class="note" style="color:var(--danger);margin:-4px 0 8px">الحد الأدنى للطلب ${money(min)}&nbsp;${cur()}</div>` : ''}
     <button class="wa" id="sendWA" ${under ? 'disabled style="opacity:.5"' : ''}>
-      <span style="font-size:18px">💬</span> إرسال الطلب على واتساب</button>
-    <button class="ghost" id="copyOrder">📋 نسخ الطلب كنص</button>
-    <button class="ghost" id="clearCart">🗑 تفريغ السلة</button>
-    <div class="note">${esc(CONF['تنويه_الاسعار'] || '')}</div>`;
+      <span style="font-size:18px">💬</span> إرسال الطلب على واتساب</button>`;
 
+  document.getElementById('gtTog').onclick = () => { totalsOpen = !totalsOpen; renderCart(); };
   document.getElementById('sendWA').onclick = sendWhatsApp;
-  document.getElementById('copyOrder').onclick = () => {
-    navigator.clipboard.writeText(orderText()).then(() => toast('تم نسخ الطلب ✓'));
-  };
   document.getElementById('clearCart').onclick = () => {
     if (confirm('تفريغ السلة؟')) { cart = {}; save('smiling_cart', cart); updBadges(); renderCart(); refreshCardStates(); }
   };
 }
+
+const CUST_FIELDS = ['cName', 'cPhone', 'cCity', 'cShip', 'cNote'];
+let orderNote = '';
+let totalsOpen = false;    // تفاصيل الإجمالي في السلة — مطوية افتراضياً
 
 function orderText() {
   const { L, pieces, sub, rate, vat, grand } = cartTotals();
@@ -1485,7 +1540,7 @@ function orderText() {
   t += `──────────────\n`;
   L.forEach((l, n) => {
     const ctn = (!ctnOnly(l.it) && l.it.pcs && l.qty % l.it.pcs === 0) ? ` (${l.qty / l.it.pcs} كرتون)` : '';
-    t += `${n + 1}) ${l.it.code} — ${dispQty(l.it, l.qty)} ${unitOf(l.it)}${ctn} × ${money(priceOf(l.it))} ${curTxt()}\n`;
+    t += `${n + 1}) ${l.it.code} — ${dispQty(l.it, l.qty)} ${unitOf(l.it)}${ctn} × ${money(priceOf(l.it))} ${curTxt()}${l.it.inStock ? '' : ' ⚠ غير متوفر'}\n`;
   });
   t += `──────────────\n`;
   t += `عدد الأصناف: ${L.length}\nإجمالي القطع: ${pieces}\n`;
