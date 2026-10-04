@@ -426,6 +426,8 @@ footer .fbar .note{color:rgba(255,255,255,.5)}
   .brand h1{font-size:14.5px}
   .brand small{display:none}
   .search{order:5; flex:1 1 100%; min-width:0}
+  /* الآيفون يكبّر الصفحة تلقائياً عند الكتابة في أي خانة خطها أصغر من 16px */
+  input,select,textarea{font-size:16px}
   .icobtn{width:40px; height:40px; border-radius:12px; font-size:18px}
   .grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
   .rail .card{flex-basis:158px; width:158px}
@@ -965,6 +967,7 @@ function openInfo() {
         `<div style="margin-top:14px; font-size:12.5px; color:var(--muted)">${esc(CONF['تنويه_الاسعار'])}</div>` : ''}
     </div>`;
   document.getElementById('modal').classList.add('on');
+  pushOverlay();
 }
 
 /* ---------- عدّاد القسم ---------- */
@@ -1053,11 +1056,23 @@ function filtered(list) {
     a = a.filter(i => i.price >= lo && i.price < hi);
   }
   if (f.q) {
-    const t = f.q.toLowerCase().trim();
-    a = a.filter(i => (i.name + ' ' + i.code + ' ' + i.tags + ' ' + i.age + ' ' +
-      i.cats.join(' ')).toLowerCase().includes(t));
+    /* كل كلمة يجب أن توجد (بأي ترتيب) — «ريموت سيارة» = «سيارة ريموت» */
+    const words = normAr(f.q).split(' ').filter(Boolean);
+    a = a.filter(i => {
+      const h = normAr(i.name + ' ' + i.code + ' ' + i.tags + ' ' + i.age + ' ' + i.cats.join(' '));
+      return words.every(w => h.includes(w));
+    });
   }
   return sortList(a);
+}
+/* توحيد الإملاء للبحث: ة/ه · أ/إ/آ/ا · ى/ي · ؤ/و · ئ/ي · حذف التشكيل والتطويل · أرقام عربية→إنجليزية */
+function normAr(s) {
+  return String(s || '').toLowerCase()
+    .replace(/[ً-ْـ]/g, '')
+    .replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي')
+    .replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+    .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+    .replace(/[_\-–—]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
 function sortList(a) {
   const s = f.sort;
@@ -1457,6 +1472,7 @@ function openItem(code) {
         <div class="prices">
           <span class="p-main" style="font-size:26px">${money(priceOf(i))}</span><span class="p-cur">${cur()} / ${esc(unitOf(i))}</span>${saleTag(i)}
           <span class="p-sub">سعر الجملة</span>
+          <div style="flex-basis:100%; font-size:12px; color:var(--muted)">غير شامل ضريبة القيمة المضافة ${vatRate()}%</div>
         </div>
         <div>
           <div class="spec"><span>القسم</span><b>${esc(catsTxt(i))}</b></div>
@@ -1483,12 +1499,20 @@ function openItem(code) {
     </div>`;
   document.getElementById('modal').classList.add('on');
   document.getElementById('scrim').classList.add('on');
+  pushOverlay();
 }
 function mq(v) { document.getElementById('mQty').value = v; }
 function closeModal() {
   document.getElementById('modal').classList.remove('on');
-  if (!document.querySelector('.drawer.on')) document.getElementById('scrim').classList.remove('on');
+  if (!document.querySelector('.drawer.on')) { document.getElementById('scrim').classList.remove('on'); popOverlay(); }
 }
+
+/* زر الرجوع في الجوال يغلق النافذة/الدرج المفتوح بدل الخروج من الموقع:
+   فتح أي نافذة يضيف خطوة واحدة للسجل، والإغلاق من الواجهة يستهلكها */
+let overlayOpen = false;
+function pushOverlay() { if (!overlayOpen) { overlayOpen = true; history.pushState({ overlay: 1 }, ''); } }
+function popOverlay() { if (overlayOpen) { overlayOpen = false; history.back(); } }
+addEventListener('popstate', () => { if (overlayOpen) { overlayOpen = false; closeAll(); } });
 function shareItem(code) {
   const u = location.origin + location.pathname + '?item=' + encodeURIComponent(code);
   navigator.clipboard.writeText(u).then(() => toast('تم نسخ الرابط ✓'));
@@ -1526,11 +1550,13 @@ function openDrawer(id) {
   document.querySelectorAll('.drawer').forEach(d => d.classList.remove('on'));
   document.getElementById(id).classList.add('on');
   document.getElementById('scrim').classList.add('on');
+  pushOverlay();
 }
 function closeAll() {
   document.querySelectorAll('.drawer').forEach(d => d.classList.remove('on'));
   document.getElementById('modal').classList.remove('on');
   document.getElementById('scrim').classList.remove('on');
+  popOverlay();
 }
 let toastT;
 function toast(msg) {
