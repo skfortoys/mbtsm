@@ -669,12 +669,15 @@ const minQty = () => {
   const v = parseInt(CONF['اقل_كمية_للصنف']);
   return (isNaN(v) || v < 1) ? MIN_QTY_FALLBACK : v;
 };
+/* الأصناف بوحدة BOX مستثناة من «أقل كمية 3» — أقل طلب لها بوكس واحد */
+const isBox   = (it) => !!it && /^box$/i.test(String(it.unit || '').trim());
+const unitMin = (it) => isBox(it) ? 1 : minQty();
 /* الأصناف التي شدّ كرتونها أقل من الحد الأدنى تُباع بالكرتون أو مضاعفاته فقط */
-const ctnOnly = (it) => !!it && it.pcs >= 1 && it.pcs < minQty();
+const ctnOnly = (it) => !!it && it.pcs >= 1 && it.pcs < unitMin(it);
 /* خطوة الكمية: حبة للعادي، كرتون كامل لصنف الكرتون-فقط */
 const stepOf  = (it) => ctnOnly(it) ? it.pcs : 1;
 /* أقل كمية مسموحة لهذا الصنف تحديداً */
-const minOf   = (it) => ctnOnly(it) ? it.pcs : minQty();
+const minOf   = (it) => ctnOnly(it) ? it.pcs : unitMin(it);
 /* تقريب الكمية لأعلى مضاعف صحيح مسموح */
 /* أقصى كمية للطلب = المتاح (مقصوص ومقرَّب لأسفل في ملف البيانات).
    صفر = لم يُنشر حد، فلا يُطبَّق أي سقف. */
@@ -696,7 +699,7 @@ const unitOf  = (it) => ctnOnly(it) ? 'كرتون' : it.unit;
 const priceOf = (it) => ctnOnly(it) ? it.ctn : it.price;
 const dispQty = (it, q) => ctnOnly(it) ? Math.round(q / it.pcs) : q;   /* حبات -> وحدة العرض */
 const realQty = (it, v) => ctnOnly(it) ? (parseInt(v) || 0) * it.pcs : (parseInt(v) || 0);
-const dispMin = (it) => ctnOnly(it) ? 1 : minQty();
+const dispMin = (it) => ctnOnly(it) ? 1 : unitMin(it);
 /* الصنف قد ينتمي لأكثر من قسم — تُكتب في الشيت مفصولة بفاصلة أو شرطة رأسية
    مثال: «ابو 10 ريال، سلايم وصلصال والعاب تلوين» */
 const splitCats = v => String(v == null ? '' : v)
@@ -723,6 +726,8 @@ const quickBtns = (it) => {
                  [it.pcs * 3, '3 كرتون'], [it.pcs * 5, '5 كرتون']]);
   }
   /* شدّ الكرتون بين 7 و10: خيار «12» يُستبدل بعدد شدّ الكرتون */
+  /* البوكس يبدأ من 1 */
+  if (isBox(it)) return trim([[1, '1'], [3, '3'], [6, '6'], [it.pcs || 0, 'كرتون']]);
   const third = (it.pcs >= 7 && it.pcs <= 10) ? [it.pcs, String(it.pcs)] : [12, '12'];
   return trim([[3, '3'], [6, '6'], third, [it.pcs || 0, 'كرتون']]);
 };
@@ -949,7 +954,7 @@ function renderFooter() {
   if (g('نص_الدفع', '')) S.push(li('💳', 'طرق الدفع', `<span>${esc(g('نص_الدفع', ''))}</span>`));
   if (g('ساعات_العمل', '')) S.push(li('🕒', 'أوقات الدوام', `<span>${esc(g('ساعات_العمل', ''))}</span>`));
   if (g('اقل_كمية_للصنف', '')) S.push(li('📦', 'أقل كمية للطلب',
-    `<span>${esc(g('اقل_كمية_للصنف', ''))} لكل صنف</span>`));
+    `<span>${esc(g('اقل_كمية_للصنف', ''))} لكل صنف — وأصناف البوكس: بوكس واحد</span>`));
   document.getElementById('fServiceList').innerHTML = S.join('') ||
     '<li><span class="t"><span>—</span></span></li>';
 
