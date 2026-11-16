@@ -1653,7 +1653,7 @@ function toggleVid(code) {
     return;
   }
   box.innerHTML = `<video src="${vidUrl(it)}" poster="${imgUrl(it.img, 900)}" controls autoplay playsinline preload="metadata"></video>`;
-  btn.textContent = '🖼 الصورة'; btn.classList.add('top');
+  btn.textContent = '↩ العودة إلى الصورة'; btn.classList.add('top');
   box.querySelector('video').onerror = () => { toast('تعذّر تشغيل الفيديو حالياً'); toggleVid(code); };
 }
 const stopVid = () => document.querySelectorAll('#mbox video').forEach(v => v.pause());
