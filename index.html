@@ -1034,6 +1034,8 @@ function renderCats() {
   let h = `<button class="chip ${f.cat === '' ? 'on' : ''}" data-c="">الكل (${ITEMS.length})</button>`;
   if (nOffer) h += `<button class="chip hot ${f.cat === '__offer' ? 'on' : ''}" data-c="__offer">🔥 العروض (${nOffer})</button>`;
   if (nNew) h += `<button class="chip hot ${f.cat === '__new' ? 'on' : ''}" data-c="__new">✨ الجديد (${nNew})</button>`;
+  const nVid = ITEMS.filter(hasVid).length;
+  if (nVid) h += `<button class="chip ${f.cat === '__vid' ? 'on' : ''}" data-c="__vid">▶ فيه فيديو (${nVid})</button>`;
   h += `<button class="chip ${f.cat === '__fav' ? 'on' : ''}" data-c="__fav">♡ المفضلة (${favs.length})</button>`;
   CATS.forEach(c => {
     const n = catCount(c.name);
@@ -1057,6 +1059,8 @@ function renderNav() {
   let h = row('', '🏠', 'كل الأصناف', ITEMS.length);
   if (nOffer) h += row('__offer', '🔥', 'العروض', nOffer);
   if (nNew) h += row('__new', '✨', 'الجديد', nNew);
+  const nVid = ITEMS.filter(hasVid).length;
+  if (nVid) h += row('__vid', '▶', 'فيه فيديو', nVid);
   h += row('__fav', '♡', 'المفضلة', favs.length);
   h += `<div class="navsep">الأقسام</div>`;
   CATS.forEach(c => { const n = catCount(c.name); if (n) h += row(c.name, c.icon || '🧸', c.name, n); });
@@ -1071,6 +1075,8 @@ function fillCatSelect() {
   const nOffer = ITEMS.filter(i => i.offer).length, nNew = ITEMS.filter(i => i.isNew).length;
   if (nOffer) h += `<option value="__offer">🔥 العروض (${nOffer})</option>`;
   if (nNew) h += `<option value="__new">✨ الجديد (${nNew})</option>`;
+  const nVid = ITEMS.filter(hasVid).length;
+  if (nVid) h += `<option value="__vid">▶ فيه فيديو (${nVid})</option>`;
   h += `<option value="__fav">♡ المفضلة (${favs.length})</option>`;
   CATS.forEach(c => { const n = catCount(c.name); if (n) h += `<option value="${esc(c.name)}">${esc(c.name)} (${n})</option>`; });
   s.innerHTML = h; s.value = f.cat;
@@ -1099,6 +1105,7 @@ function filtered(list) {
   let a = (list || ITEMS).slice();
   if (f.cat === '__offer') a = a.filter(i => i.offer);
   else if (f.cat === '__new') a = a.filter(i => i.isNew);
+  else if (f.cat === '__vid') a = a.filter(hasVid);
   else if (f.cat === '__fav') a = a.filter(i => favs.includes(i.code));
   else if (f.cat) a = a.filter(i => hasCat(i, f.cat));
 
