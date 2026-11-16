@@ -180,6 +180,19 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 .tag{font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; background:var(--yellow); color:#4A3A00}
 .tag.new{background:var(--green); color:#fff}
 .tag.out{background:#5A6577; color:#fff}
+/* علامة «▶ فيديو» على الصنف الذي له فيديو — أسفل الصورة حتى لا تزاحم «جديد» و«عرض» */
+.vtag{position:absolute; bottom:8px; inset-inline-end:8px; font-size:11px; font-weight:800; padding:3px 9px;
+  border-radius:999px; background:rgba(12,22,42,.72); color:#fff; pointer-events:none}
+/* زر الفيديو في نافذة الصنف، والفيديو يحل مكان الصورة بنفس المساحة */
+.mimg{position:relative; min-width:0; overflow:hidden}
+/* min-width:0 + max-width: عرض الفيديو الأصلي (960) كان يوسّع عمود النافذة خارج الشاشة */
+.mimg video{width:100%; max-width:100%; height:100%; object-fit:contain; background:#000; display:block}
+/* زر الفيديو علامة فوق الصورة نفسها (لا يأخذ سطراً) — بنفس شكل علامة البطاقة لكن أكبر للمس.
+   أثناء التشغيل ينتقل لأعلى الوسط حتى لا يغطي أزرار التشغيل في الأسفل */
+.vbtn{position:absolute; bottom:12px; inset-inline-end:12px; z-index:1; font-size:13px; font-weight:800;
+  padding:7px 14px; border-radius:999px; background:rgba(12,22,42,.78); color:#fff}
+.vbtn:hover{background:var(--navy)}
+.vbtn.top{bottom:auto; top:12px; inset-inline-end:auto; left:50%; transform:translateX(-50%)}
 .fav{
   position:absolute; top:8px; inset-inline-end:8px; width:32px; height:32px; border-radius:50%;
   background:rgba(255,255,255,.94); display:grid; place-items:center; font-size:15px; color:#BCC6D6;
@@ -641,6 +654,14 @@ const onImgErr = (el, id) => {
 
 /* ---------- حالة التطبيق ---------- */
 let ITEMS = [], CATS = [], CONF = {};
+let VIDS = new Set();      // أكواد الأصناف التي لها فيديو (من videos.json)
+const hasVid = it => VIDS.has(String(it.code).toLowerCase());
+/* مكان ملفات الفيديو: افتراضياً مجلد videos مع الموقع، ويتغيّر من الاعدادات
+   (رابط_الفيديوهات) عند النقل لخدمة أخرى مثل Cloudflare R2 — بلا تعديل في الكود */
+const vidUrl = it => {
+  const base = String(CONF['رابط_الفيديوهات'] || 'videos/').trim().replace(/\/?$/, '/');
+  return base + encodeURIComponent(it.code) + '.mp4';
+};
 let cart = load('smiling_cart', {});
 let favs = load('smiling_favs', []);
 let AGES = [];
@@ -789,12 +810,15 @@ async function boot() {
 
   try {
     /* items.json إلزامي — الباقي تحسينات، وفشلها لا يوقف الموقع */
-    const [base, ctrl, cats, conf] = await Promise.all([
+    const [base, ctrl, cats, conf, vids] = await Promise.all([
       fetchItems(),
       fetchSheet(SH_CTRL).catch(() => []),
       fetchSheet('الاقسام').catch(() => []),
-      fetchSheet('الاعدادات').catch(() => [])
+      fetchSheet('الاعدادات').catch(() => []),
+      /* قائمة الأصناف التي لها فيديو — فشلها يعني فقط عدم ظهور الفيديو */
+      fetch('videos.json?_=' + Date.now()).then(r => r.ok ? r.json() : {}).catch(() => ({}))
     ]);
+    VIDS = new Set((vids.codes || []).map(c => String(c).toLowerCase()));
 
     conf.forEach(r => { if (r['المفتاح']) CONF[r['المفتاح']] = r['القيمة']; });
 
@@ -1307,6 +1331,7 @@ function cardHTML(i) {
         ${!i.inStock ? '<span class="tag out">غير متوفر</span>' : ''}
       </div>
       <button class="fav ${favs.includes(i.code) ? 'on' : ''} js-fav">${favs.includes(i.code) ? '♥' : '♡'}</button>
+      ${hasVid(i) ? '<span class="vtag">▶ فيديو</span>' : ''}
     </div>
     <div class="body">
       <div class="code">${esc(i.code)}</div>
@@ -1569,7 +1594,10 @@ function openItem(code) {
   document.getElementById('mbox').innerHTML = `
     <button class="mclose" onclick="closeModal()">✕</button>
     <div class="mgrid">
-      <div class="mimg"><img src="${imgUrl(i.img, 900)}" onerror="onImgErr(this,'${i.img}')" alt="${esc(i.name)}"></div>
+      <div class="mimg">
+        <div id="mMedia" style="width:100%;height:100%"><img src="${imgUrl(i.img, 900)}" onerror="onImgErr(this,'${i.img}')" alt="${esc(i.name)}"></div>
+        ${hasVid(i) ? `<button class="vbtn" id="mVidBtn" onclick="toggleVid('${esc(i.code)}')">▶ فيديو</button>` : ''}
+      </div>
       <div class="minfo">
         <div class="code">${esc(i.code)}</div>
         <h2>${esc(i.name)}</h2>
@@ -1606,7 +1634,24 @@ function openItem(code) {
   pushOverlay();
 }
 function mq(v) { document.getElementById('mQty').value = v; }
+
+/* الفيديو يحل مكان الصورة بنفس المساحة، ولا يتحمّل إلا عند الضغط.
+   الضغط مرة ثانية يرجّع الصورة ويوقف الفيديو */
+function toggleVid(code) {
+  const it = ITEMS.find(x => x.code === code); if (!it) return;
+  const box = document.getElementById('mMedia'), btn = document.getElementById('mVidBtn');
+  if (box.querySelector('video')) {
+    box.innerHTML = `<img src="${imgUrl(it.img, 900)}" onerror="onImgErr(this,'${it.img}')" alt="${esc(it.name)}">`;
+    btn.textContent = '▶ فيديو'; btn.classList.remove('top');
+    return;
+  }
+  box.innerHTML = `<video src="${vidUrl(it)}" poster="${imgUrl(it.img, 900)}" controls autoplay playsinline preload="metadata"></video>`;
+  btn.textContent = '🖼 الصورة'; btn.classList.add('top');
+  box.querySelector('video').onerror = () => { toast('تعذّر تشغيل الفيديو حالياً'); toggleVid(code); };
+}
+const stopVid = () => document.querySelectorAll('#mbox video').forEach(v => v.pause());
 function closeModal() {
+  stopVid();
   document.getElementById('modal').classList.remove('on');
   if (!document.querySelector('.drawer.on')) { document.getElementById('scrim').classList.remove('on'); popOverlay(); }
 }
@@ -1657,6 +1702,7 @@ function openDrawer(id) {
   pushOverlay();
 }
 function closeAll() {
+  stopVid();
   document.querySelectorAll('.drawer').forEach(d => d.classList.remove('on'));
   document.getElementById('modal').classList.remove('on');
   document.getElementById('scrim').classList.remove('on');
