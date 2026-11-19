@@ -1633,23 +1633,32 @@ async function buildOrderPdf() {
   await loadPdfLib();
   await document.fonts.ready;
   const W = 794;                                  // عرض A4 بالبكسل (96 نقطة/إنش)
-  const host = document.createElement('div');
-  /* ltr + left:0: اتجاه الموقع (rtl) كان يزيح الصفحة وقت الرسم فيُقصّ جانبها */
-  host.dir = 'ltr';
-  host.style.cssText = `position:absolute;left:0;top:0;width:${W}px;z-index:-1;pointer-events:none`;
-  const el = orderPdfEl(); host.appendChild(el); document.body.appendChild(host);
+  /* الرسم داخل إطار مستقل (iframe) بلا شريط تمرير وباتجاه ltr: داخل صفحة الموقع كان اتجاه rtl
+     وشريط التمرير الأيسر (ويندوز) يزيحان الصفحة وقت الرسم فيُقصّ جانبها الأيسر.
+     وفائدة ثانية: الأداة لا تنسخ إلا محتوى الإطار، فلا تعيد تحميل صور الأصناف */
+  const ifr = document.createElement('iframe');
+  ifr.setAttribute('aria-hidden', 'true');
+  ifr.style.cssText = `position:fixed;left:0;top:0;width:${W}px;height:1123px;border:0;opacity:0;pointer-events:none;z-index:-1`;
+  document.body.appendChild(ifr);
   try {
+    const d = ifr.contentDocument;
+    d.open();
+    d.write(`<!doctype html><html dir="ltr"><head><meta charset="utf-8">
+      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap">
+      <style>html,body{margin:0;padding:0;background:#fff;overflow:hidden}</style></head><body></body></html>`);
+    d.close();
+    const lnk = d.querySelector('link');
+    await new Promise(r => { if (lnk.sheet) r(); else { lnk.onload = lnk.onerror = r; setTimeout(r, 4000); } });
+    d.body.innerHTML = orderPdfEl().outerHTML;
+    const el = d.body.firstElementChild;
+    await d.fonts.ready;
+    ifr.style.height = Math.max(1123, el.scrollHeight) + 'px';   // الصفحة كلها داخل الإطار
     /* نقاط القطع المسموحة = أسفل كل صف وكل قسم */
     const top0 = el.getBoundingClientRect().top;
     const cuts = [...el.querySelectorAll('tr, [dir="rtl"] > *')].map(n => n.getBoundingClientRect().bottom - top0);
     const scale = 2;
     /* foreignObjectRendering: يرسم بمحرك نصوص المتصفح — بدونه تختفي المسافات بين الكلمات العربية */
-    /* ignoreElements: الأداة تنسخ الموقع كله قبل الرسم، فتعيد تحميل مئات صور الأصناف بلا فائدة.
-       ننسخ صفحة الطلب فقط (ونُبقي <head> لأجل الخط والأنماط) */
-    const cv = await html2canvas(el, {
-      scale, backgroundColor: '#ffffff', foreignObjectRendering: true,
-      ignoreElements: n => document.body.contains(n) && n !== host && !host.contains(n) && !n.contains(host)
-    });
+    const cv = await html2canvas(el, { scale, backgroundColor: '#ffffff', foreignObjectRendering: true });
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
     const pw = 210, ph = 297, m = 6;
@@ -1673,7 +1682,7 @@ async function buildOrderPdf() {
     }
     return pdf.output('blob');
   } finally {
-    host.remove();
+    ifr.remove();
   }
 }
 const isTouch = () => matchMedia('(pointer:coarse)').matches;
