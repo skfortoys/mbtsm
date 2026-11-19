@@ -350,6 +350,13 @@ header{position:sticky; top:0; z-index:60; background:var(--surface); box-shadow
 .gt-tog{font-size:12px; font-weight:700; color:var(--sky-d); background:var(--sky-soft); padding:4px 9px; border-radius:8px; white-space:nowrap}
 .gt-more{background:#F7FAFD; border:1px solid var(--line); border-radius:11px; padding:9px 11px 3px; margin-bottom:10px}
 .gt-more .note{margin:0 0 6px; text-align:start}
+/* زر الواتساب النصي وزر الـ PDF جنب بعض — الواتساب أعرض لأنه الأسرع */
+.sendrow{display:flex; gap:8px}
+.sendrow .wa{flex:1 1 auto; width:auto}
+.pdfbtn{flex:0 0 auto; padding:0 16px; border-radius:13px; background:var(--surface); border:1.5px solid var(--navy);
+  color:var(--navy); font-weight:800; font-size:14.5px; white-space:nowrap}
+.pdfbtn:hover{background:var(--navy); color:#fff}
+.pdfbtn.busy{opacity:.6; pointer-events:none}
 .cart-clear{display:block; margin:14px auto 4px; font-size:13px; color:var(--muted); padding:6px 12px}
 .cart-clear:hover{color:var(--red)}
 #cartBody .ci{padding:8px; gap:9px; margin-bottom:8px; align-items:flex-start}
@@ -1463,6 +1470,7 @@ function renderCart() {
   const { L, pieces, sub, rate, vat, grand } = cartTotals();
   const body = document.getElementById('cartBody'), foot = document.getElementById('cartFoot');
   if (!L.length) {
+    save('smiling_orderno', '');           // سلة فارغة = الطلب القادم برقم جديد
     body.innerHTML = `<div class="state"><div class="em">🛒</div><b>السلة فارغة</b>ابدأ بإضافة الأصناف</div>`;
     foot.innerHTML = ''; return;
   }
@@ -1551,24 +1559,41 @@ function renderCart() {
       <b>${money(grand)}&nbsp;${cur()}</b>
     </div>
     ${under ? `<div class="note" style="color:var(--danger);margin:-4px 0 8px">الحد الأدنى للطلب ${money(min)}&nbsp;${cur()}</div>` : ''}
-    <button class="wa" id="sendWA" ${under ? 'disabled style="opacity:.5"' : ''}>
-      <span style="font-size:18px">💬</span> إرسال الطلب على واتساب</button>`;
+    <div class="sendrow">
+      <button class="wa" id="sendWA" ${under ? 'disabled style="opacity:.5"' : ''}>
+        <span style="font-size:18px">💬</span> إرسال على واتساب</button>
+      <button class="pdfbtn" id="sendPDF" ${under ? 'disabled style="opacity:.5"' : ''}>📄 PDF</button>
+    </div>`;
 
   document.getElementById('gtTog').onclick = () => { totalsOpen = !totalsOpen; renderCart(); };
   document.getElementById('sendWA').onclick = sendWhatsApp;
+  document.getElementById('sendPDF').onclick = sendPdf;
   document.getElementById('clearCart').onclick = () => {
-    if (confirm('تفريغ السلة؟')) { cart = {}; save('smiling_cart', cart); updBadges(); renderCart(); refreshCardStates(); }
+    if (confirm('تفريغ السلة؟')) { cart = {}; save('smiling_cart', cart); save('smiling_orderno', ''); updBadges(); renderCart(); refreshCardStates(); }
   };
 }
 
 const CUST_FIELDS = ['cName', 'cPhone', 'cCity', 'cShip', 'cNote'];
 let orderNote = '';
+
+/* رقم الطلب: من التاريخ والوقت (سنة شهر يوم - ساعة دقيقة) مثل 261119-1432.
+   يتولّد مرة واحدة ويبقى ثابتاً للسلة نفسها، حتى يطابق رقمُ الـ PDF رقمَ الرسالة النصية.
+   يتجدد إذا فرغت السلة أو مرّ عليه 12 ساعة (طلب جديد في يوم آخر) */
+function orderNo() {
+  const o = load('smiling_orderno', '');
+  if (o && o.n && Date.now() - o.t < 12 * 3600e3) return o.n;
+  const d = new Date(), p = v => String(v).padStart(2, '0');
+  const n = `${p(d.getFullYear() % 100)}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}`;
+  save('smiling_orderno', { n, t: Date.now() });
+  return n;
+}
 let totalsOpen = false;    // تفاصيل الإجمالي في السلة — مطوية افتراضياً
 
 function orderText() {
   const { L, pieces, sub, rate, vat, grand } = cartTotals();
   const g = id => (document.getElementById(id)?.value || '').trim();
   let t = `🧾 *طلبية جديدة — ${CONF['اسم_المتجر'] || 'الطفل المبتسم'}*\n`;
+  t += `رقم الطلب: ${orderNo()}\n`;
   t += `التاريخ: ${new Date().toLocaleDateString('en-GB')}\n`;
   if (g('cName')) t += `العميل: ${g('cName')}\n`;
   if (g('cPhone')) t += `الجوال: ${g('cPhone')}\n`;
@@ -1586,6 +1611,189 @@ function orderText() {
   t += `*الإجمالي شامل الضريبة: ${money(grand)} ${curTxt()}*\n`;
   if (g('cNote')) t += `\nملاحظات: ${g('cNote')}`;
   return t;
+}
+
+/* ---------- الطلب كملف PDF ----------
+   واتساب لا يقبل إرفاق ملف عبر رابط wa.me، لذلك:
+   • الجوال: قائمة المشاركة ← يختار العميل واتساب ثم محادثة المحل.
+   • الكمبيوتر: يُنزَّل الملف وتُفتح محادثة المحل برسالة قصيرة ليُرفقه العميل.
+   الملف يُرسم كصورة من صفحة HTML (html2canvas) ثم يوضع في PDF (jsPDF)، فيظهر العربي
+   سليماً بخط الموقع. المكتبتان تُحمَّلان عند أول ضغطة فقط حتى لا تبطئا الموقع. */
+const PDF_LIBS = ['https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+                  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'];
+let pdfLibP = null, pendingPdf = null;
+const loadPdfLib = () => pdfLibP || (pdfLibP = Promise.all(PDF_LIBS.map(src => new Promise((ok, no) => {
+  const s = document.createElement('script');
+  s.src = src; s.onload = ok; s.onerror = () => no(new Error('pdf lib'));
+  document.head.appendChild(s);
+}))).catch(e => { pdfLibP = null; throw e; }));
+
+/* يرسم صفحة الطلب ويقسمها على صفحات A4 دون قطع صف من الجدول في المنتصف */
+async function buildOrderPdf() {
+  await loadPdfLib();
+  await document.fonts.ready;
+  const W = 794;                                  // عرض A4 بالبكسل (96 نقطة/إنش)
+  const host = document.createElement('div');
+  /* ltr + left:0: اتجاه الموقع (rtl) كان يزيح الصفحة وقت الرسم فيُقصّ جانبها */
+  host.dir = 'ltr';
+  host.style.cssText = `position:absolute;left:0;top:0;width:${W}px;z-index:-1;pointer-events:none`;
+  const el = orderPdfEl(); host.appendChild(el); document.body.appendChild(host);
+  try {
+    /* نقاط القطع المسموحة = أسفل كل صف وكل قسم */
+    const top0 = el.getBoundingClientRect().top;
+    const cuts = [...el.querySelectorAll('tr, [dir="rtl"] > *')].map(n => n.getBoundingClientRect().bottom - top0);
+    const scale = 2;
+    /* foreignObjectRendering: يرسم بمحرك نصوص المتصفح — بدونه تختفي المسافات بين الكلمات العربية */
+    /* ignoreElements: الأداة تنسخ الموقع كله قبل الرسم، فتعيد تحميل مئات صور الأصناف بلا فائدة.
+       ننسخ صفحة الطلب فقط (ونُبقي <head> لأجل الخط والأنماط) */
+    const cv = await html2canvas(el, {
+      scale, backgroundColor: '#ffffff', foreignObjectRendering: true,
+      ignoreElements: n => document.body.contains(n) && n !== host && !host.contains(n) && !n.contains(host)
+    });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const pw = 210, ph = 297, m = 6;
+    const pxPerMm = cv.width / pw;                 // الصورة تغطي عرض الصفحة كاملاً
+    const pageH = Math.floor((ph - 2 * m) * pxPerMm);
+    let y = 0, first = true;
+    while (y < cv.height - 2) {
+      let end = Math.min(y + pageH, cv.height);
+      if (end < cv.height) {                       // ارجع لأقرب نهاية صف داخل الصفحة
+        const ok = cuts.map(c => c * scale).filter(c => c > y + pageH * 0.3 && c <= end);
+        if (ok.length) end = Math.max(...ok);
+      }
+      const part = document.createElement('canvas');
+      part.width = cv.width; part.height = end - y;
+      const ctx = part.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, part.width, part.height);
+      ctx.drawImage(cv, 0, y, cv.width, end - y, 0, 0, cv.width, end - y);
+      if (!first) pdf.addPage();
+      pdf.addImage(part.toDataURL('image/jpeg', 0.9), 'JPEG', 0, m, pw, (end - y) / pxPerMm);
+      first = false; y = end;
+    }
+    return pdf.output('blob');
+  } finally {
+    host.remove();
+  }
+}
+const isTouch = () => matchMedia('(pointer:coarse)').matches;
+
+function orderPdfEl() {
+  const { L, sub, rate, vat, grand } = cartTotals();
+  const g = id => (document.getElementById(id)?.value || '').trim();
+  const c = (k, d) => (CONF[k] || d || '').trim();
+  const N = '#123FA6', M = '#6b7588';
+  const cust = [['العميل', g('cName')], ['الجوال', g('cPhone')], ['المدينة', g('cCity')], ['الاستلام', g('cShip')]]
+    .filter(x => x[1]).map(x => `<div><span style="color:${M}">${x[0]}:</span> ${esc(x[1])}</div>`).join('');
+  const lic = [c('السجل_التجاري') && 'س.ت: ' + c('السجل_التجاري'), c('الرقم_الضريبي') && 'الرقم الضريبي: ' + c('الرقم_الضريبي')]
+    .filter(Boolean).join(' · ');
+  const contact = [c('رقم_واتساب', WHATSAPP_FALLBACK), c('البريد_الإلكتروني')].filter(Boolean).join(' · ');
+  const rows = L.map((l, n) => {
+    const ctn = (!ctnOnly(l.it) && l.it.pcs && l.qty % l.it.pcs === 0)
+      ? `<div style="color:${M};font-size:11px">${l.qty / l.it.pcs} كرتون</div>` : '';
+    return `<tr style="background:${n % 2 ? '#FAFBFD' : '#fff'}">
+      <td style="padding:7px 6px;border-bottom:1px solid #e3e7ee">${n + 1}</td>
+      <td style="padding:7px 6px;border-bottom:1px solid #e3e7ee;color:${N};direction:ltr;text-align:right">${esc(l.it.code)}</td>
+      <td style="padding:7px 6px;border-bottom:1px solid #e3e7ee">${esc(l.it.name)}</td>
+      <td style="padding:7px 6px;border-bottom:1px solid #e3e7ee;white-space:nowrap">${dispQty(l.it, l.qty)} ${esc(unitOf(l.it))}${ctn}</td>
+      <td style="padding:7px 6px;border-bottom:1px solid #e3e7ee;white-space:nowrap">${money(priceOf(l.it))}</td>
+      <td style="padding:7px 6px;border-bottom:1px solid #e3e7ee;white-space:nowrap">${money(l.total)}</td></tr>`;
+  }).join('');
+  const th = t => `<th style="background:${N};color:#fff;font-weight:700;padding:8px 6px;text-align:right">${t}</th>`;
+  const tr = (a, b, big) => `<div style="display:flex;justify-content:space-between;gap:16px;white-space:nowrap;padding:${big ? '9px 0 0' : '4px 0'};${big ?
+    `border-top:2px solid ${N};margin-top:4px;font-size:16px;font-weight:800;color:${N}` : `color:#4a5466`}"><span>${a}</span><span>${b}</span></div>`;
+
+  const el = document.createElement('div');
+  el.dir = 'rtl';
+  el.style.cssText = `width:100%;box-sizing:border-box;padding:26px 28px;background:#fff;color:#1b2333;font-family:Tajawal,sans-serif;font-size:13px;line-height:1.6`;
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:14px;border-bottom:3px solid ${N}">
+      <div style="display:flex;gap:12px;align-items:center">
+        <img src="${document.getElementById('logoImg')?.src || ''}" style="width:58px;height:58px;border-radius:14px">
+        <div><div style="font-size:19px;font-weight:800;color:${N}">${esc(c('اسم_المتجر', 'الطفل المبتسم'))}</div>
+          ${c('وصف_المتجر') ? `<div style="font-size:11.5px;color:${M}">${esc(c('وصف_المتجر'))}</div>` : ''}
+          <div style="font-size:11.5px;color:${M}">${esc(contact)}</div>
+          ${lic ? `<div style="font-size:11px;color:${M}">${esc(lic)}</div>` : ''}</div>
+      </div>
+      <div style="text-align:left"><div style="font-size:20px;font-weight:800;color:${N}">طلبية</div>
+        <div style="font-size:12px;color:${M}">رقم: <span dir="ltr" style="unicode-bidi:isolate">${orderNo()}</span></div>
+        <div style="font-size:12px;color:${M}">التاريخ: ${new Date().toLocaleDateString('en-GB')}</div></div>
+    </div>
+    ${cust ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin:16px 0;padding:12px 14px;background:#F5F8FC;border-radius:8px">${cust}</div>` : '<div style="height:14px"></div>'}
+    <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+      <thead><tr>${th('#')}${th('الكود')}${th('اسم الصنف')}${th('الكمية')}${th('السعر')}${th('الإجمالي')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="width:340px;margin:16px auto 0 0">
+      ${tr('عدد الأصناف', L.length)}
+      ${tr('الإجمالي قبل الضريبة', money(sub) + ' ' + curTxt())}
+      ${tr('ضريبة القيمة المضافة ' + rate + '%', money(vat) + ' ' + curTxt())}
+      ${tr('الإجمالي شامل الضريبة', money(grand) + ' ' + curTxt(), true)}
+    </div>
+    ${g('cNote') ? `<div style="margin-top:16px;padding:10px 12px;border:1px dashed #c9d0dc;border-radius:8px;color:#4a5466"><b>ملاحظات:</b> ${esc(g('cNote'))}</div>` : ''}
+    <div style="margin-top:22px;padding-top:10px;border-top:1px solid #e3e7ee;display:flex;justify-content:space-between;gap:12px;font-size:11px;color:#8a93a3">
+      <span>${esc(c('تنويه_الاسعار'))}</span><span style="direction:ltr">${location.host}</span></div>`;
+  /* غلاف بعرض صفحة A4 المتاح واتجاه يسار-يمين: بدونه يزيح اتجاهُ الموقع (rtl) الصفحةَ وقت الرسم فيُقصّ جانبها */
+  const wrap = document.createElement('div');
+  wrap.dir = 'ltr'; wrap.style.cssText = 'width:100%;background:#fff';
+  wrap.appendChild(el);
+  return wrap;
+}
+
+async function sendPdf(e) {
+  const btn = e.currentTarget, label = '📄 PDF';
+  const fname = `طلبية-${orderNo()}.pdf`;
+  /* الجوال: إن انتهت مهلة «ضغطة المستخدم» أثناء التجهيز يصير الزر «شارك» والضغطة الثانية تشارك فوراً */
+  if (pendingPdf) { const f = pendingPdf; pendingPdf = null; btn.textContent = label; return sharePdf(f, btn, label); }
+
+  /* الكمبيوتر: نفتح نافذة الواتساب الآن (قبل الانتظار) وإلا يمنعها المتصفح كنافذة منبثقة */
+  const num = (CONF['رقم_واتساب'] || WHATSAPP_FALLBACK).replace(/\D/g, '');
+  const waWin = (!isTouch() && num) ? window.open('about:blank', '_blank') : null;
+
+  btn.classList.add('busy'); btn.textContent = '⏳ جاري التجهيز';
+  try {
+    const blob = await buildOrderPdf();
+    const file = new File([blob], fname, { type: 'application/pdf' });
+
+    if (isTouch()) { btn.textContent = label; await sharePdf(file, btn, label); return; }
+
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(file); a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+    const msg = `السلام عليكم، مرفق ملف الطلبية رقم ${orderNo()} 📄`;
+    if (waWin) waWin.location = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+    toast('نزل ملف الطلبية — أرفقه في محادثة الواتساب اللي انفتحت');
+    btn.textContent = label;
+  } catch (err) {
+    console.error(err);
+    if (waWin) waWin.close();
+    toast('تعذّر تجهيز الملف — جرّب مرة ثانية أو أرسل الطلب نصاً');
+    btn.textContent = label;
+  } finally {
+    btn.classList.remove('busy');
+  }
+}
+
+async function sharePdf(file, btn, label) {
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: file.name, text: `طلبية رقم ${orderNo()}` });
+      return;
+    } catch (err) {
+      if (err.name === 'AbortError') return;                 // العميل أغلق قائمة المشاركة
+      if (err.name === 'NotAllowedError') {                   // انتهت مهلة الضغطة أثناء التجهيز
+        pendingPdf = file; btn.textContent = '📤 شارك';
+        toast('الملف جاهز — اضغط «شارك» واختر واتساب'); return;
+      }
+    }
+  }
+  /* جهاز لا يدعم مشاركة الملفات: تنزيل عادي */
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = file.name;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('نزل ملف الطلبية — أرسله على واتساب');
+  btn.textContent = label;
 }
 
 function sendWhatsApp() {
