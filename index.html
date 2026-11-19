@@ -1721,8 +1721,10 @@ function orderPdfEl() {
         <img src="${document.getElementById('logoImg')?.src || ''}" style="width:58px;height:58px;border-radius:14px">
         <div><div style="font-size:19px;font-weight:800;color:${N}">${esc(c('اسم_المتجر', 'الطفل المبتسم'))}</div>
           ${c('وصف_المتجر') ? `<div style="font-size:11.5px;color:${M}">${esc(c('وصف_المتجر'))}</div>` : ''}
-          <div style="font-size:11.5px;color:${M}">${esc(contact)}</div>
-          ${lic ? `<div style="font-size:11px;color:${M}">${esc(lic)}</div>` : ''}</div>
+          <!-- nowrap: آيفون يحسب العرض بخط الموقع ويرسم بخط النظام الأعرض فكان السطر ينكسر؛
+               بدون التفاف يمتد السطر لليسار في المساحة الفاضية -->
+          <div style="font-size:11.5px;color:${M};white-space:nowrap">${esc(contact)}</div>
+          ${lic ? `<div style="font-size:11px;color:${M};white-space:nowrap">${esc(lic)}</div>` : ''}</div>
       </div>
       <!-- لا ينكسر: على آيفون يُرسم بخط النظام الأعرض فكان رقم الطلب ينقسم ويتداخل مع التاريخ -->
       <div style="text-align:left;flex:0 0 auto;white-space:nowrap"><div style="font-size:20px;font-weight:800;color:${N}">طلبية</div>
