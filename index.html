@@ -1742,7 +1742,7 @@ function orderPdfEl() {
     </div>
     ${g('cNote') ? `<div style="margin-top:16px;padding:10px 12px;border:1px dashed #c9d0dc;border-radius:8px;color:#4a5466"><b>ملاحظات:</b> ${esc(g('cNote'))}</div>` : ''}
     <div style="margin-top:22px;padding-top:10px;border-top:1px solid #e3e7ee;display:flex;justify-content:space-between;gap:12px;font-size:11px;color:#8a93a3">
-      <span>${esc(c('تنويه_الاسعار'))}</span><span style="direction:ltr">${location.host}</span></div>`;
+      <span style="color:#D92D20;font-weight:800;font-size:12.5px">${esc(c('تنويه_الاسعار'))}</span><span style="direction:ltr">${location.host}</span></div>`;
   /* غلاف بعرض صفحة A4 المتاح واتجاه يسار-يمين: بدونه يزيح اتجاهُ الموقع (rtl) الصفحةَ وقت الرسم فيُقصّ جانبها */
   const wrap = document.createElement('div');
   wrap.dir = 'ltr'; wrap.style.cssText = 'width:100%;background:#fff';
